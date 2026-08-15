@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { compressImage } from "./imageCompress";
 
 // يرفع صورة مستند إلى مجلد الكابتن ويعيد المسار المخزّن
 export async function uploadCaptainDoc(
@@ -6,11 +7,12 @@ export async function uploadCaptainDoc(
   slot: string,
   file: File
 ): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `${userId}/${slot}.${ext}`;
+  // ضغط الصورة تلقائيًا قبل الرفع (توفير مساحة وسرعة)
+  const compressed = await compressImage(file);
+  const path = `${userId}/${slot}.jpg`;
   const { error } = await supabase.storage
     .from("captain-docs")
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
   if (error) throw new Error(error.message);
   return path;
 }
