@@ -8,6 +8,7 @@ interface Props {
   color: "green" | "red";
   value: LatLng | null;
   address: string;
+  autoLocate?: boolean;
   onChange: (loc: LatLng, address: string) => void;
 }
 
@@ -27,7 +28,7 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-export default function MapPicker({ label, color, value, address, onChange }: Props) {
+export default function MapPicker({ label, color, value, address, autoLocate, onChange }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mapPicker">
@@ -37,15 +38,15 @@ export default function MapPicker({ label, color, value, address, onChange }: Pr
         <span>{address || "اضغط للاختيار على الخريطة"}</span>
       </button>
       {open && (
-        <MapPanel color={color} value={value} onChange={onChange} onClose={() => setOpen(false)} />
+        <MapPanel color={color} value={value} autoLocate={autoLocate} onChange={onChange} onClose={() => setOpen(false)} />
       )}
     </div>
   );
 }
 
 function MapPanel({
-  color, value, onChange, onClose,
-}: { color: "green" | "red"; value: LatLng | null; onChange: Props["onChange"]; onClose: () => void; }) {
+  color, value, autoLocate, onChange, onClose,
+}: { color: "green" | "red"; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onClose: () => void; }) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,12 +85,31 @@ function MapPanel({
     mapRef.current = map;
     if (value) setMarker(value);
 
-    // إصلاح مشكلة الخريطة الفاضية في MapLibre 6.x:
-    // إجبار إعادة الرسم بعد التحميل عبر resize + قفزة بسيطة تُحمّل كل البلاطات
+    // زر الموقع الحالي (أيقونة السهم) — يظهر في الخريطة
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: false,
+      showAccuracyCircle: true,
+    });
+    map.addControl(geolocate, "top-left");
+
+    // عند تحديد الموقع بالزر: ضع الدبوس على موقع المستخدم واملأ العنوان
+    geolocate.on("geolocate", (pos) => {
+      const c = (pos as unknown as GeolocationPosition).coords;
+      const loc = { lat: c.latitude, lng: c.longitude };
+      setMarker(loc);
+      reverseGeocode(loc).then((addr) => onChange(loc, addr));
+    });
+
+    // إصلاح مشكلة الخريطة الفاضية في MapLibre 6.x + تحديد الموقع تلقائيًا أول مرة
     map.on("load", () => {
       map.resize();
       const c = map.getCenter();
       map.jumpTo({ center: [c.lng, c.lat], zoom: map.getZoom() });
+      // لو مطلوب التحديد التلقائي ولسه مفيش موقع محدد، شغّل تحديد الموقع
+      if (autoLocate && !value) {
+        setTimeout(() => geolocate.trigger(), 400);
+      }
     });
     // إعادة قياس إضافية بعد ظهور العنصر (لو كان مخفيًا لحظة الإنشاء)
     setTimeout(() => map.resize(), 300);
@@ -101,7 +121,7 @@ function MapPanel({
     });
 
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
-  }, [value, setMarker, onChange]);
+  }, [value, autoLocate, setMarker, onChange]);
 
   // البحث عبر Nominatim
   const runSearch = async () => {

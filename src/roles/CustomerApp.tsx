@@ -75,7 +75,7 @@ export default function CustomerApp() {
             <p>أهلاً {profile?.full_name || ""}، حدّد وجهتك وسنبحث لك عن أقرب كابتن</p>
           </div>
 
-          <MapPicker label="من" color="green" value={pickup} address={pickupAddr}
+          <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
             onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
           <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
             onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />

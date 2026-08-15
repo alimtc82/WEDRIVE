@@ -145,3 +145,7 @@ input,button{font-family:inherit}
 .fareBox>div{display:flex;flex-direction:column;gap:2px}
 
 .verTag{position:fixed;bottom:12px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.6;pointer-events:none;z-index:5}
+
+/* أزرار تحكم الخريطة (زر الموقع الحالي) */
+.maplibregl-ctrl-group{border-radius:8px!important;overflow:hidden}
+.maplibregl-ctrl-group button{width:34px!important;height:34px!important}
