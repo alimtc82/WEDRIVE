@@ -70,22 +70,40 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       const uid = auth.user?.id;
       if (!uid) throw new Error("تعذّر إنشاء الحساب");
 
-      // 2) رفع المستندات الستة
-      const paths: Record<string, string> = {};
-      for (const s of DOC_SLOTS) {
-        paths[s.key] = await uploadCaptainDoc(uid, s.key, docs[s.key]!);
+      // التأكد من وجود جلسة نشطة (لازمة لصلاحيات الرفع). لو مش موجودة، سجّل الدخول.
+      let sess = auth.session;
+      if (!sess) {
+        const { data: si, error: siErr } = await supabase.auth.signInWithPassword({
+          email: email.trim(), password,
+        });
+        if (siErr) throw new Error("تم إنشاء الحساب لكن تعذّر تسجيل الدخول لرفع المستندات: " + siErr.message);
+        sess = si.session;
       }
 
-      // 3) حفظ بيانات الكابتن (مسارات + تواريخ + الموافقة)
-      const { error: upErr } = await supabase.from("captains").update({
+      // انتظار قصير لضمان تنفيذ trigger إنشاء صف الكابتن، ثم التأكد من وجوده
+      await ensureCaptainRow(uid);
+
+      // 2) رفع المستندات الستة (مع رسالة خطأ واضحة لكل صورة)
+      const paths: Record<string, string> = {};
+      for (const s of DOC_SLOTS) {
+        try {
+          paths[s.key] = await uploadCaptainDoc(uid, s.key, docs[s.key]!);
+        } catch (upErr) {
+          throw new Error(`فشل رفع صورة (${s.label}): ${upErr instanceof Error ? upErr.message : ""}`);
+        }
+      }
+
+      // 3) حفظ بيانات الكابتن (مسارات + تواريخ + الموافقة) والتأكد من نجاح الحفظ
+      const { data: updated, error: updErr } = await supabase.from("captains").update({
         ...paths,
         id_card_expiry: idExpiry,
         vehicle_license_expiry: vehExpiry,
         driver_license_expiry: drvExpiry,
         terms_accepted_at: new Date().toISOString(),
         status: "pending",
-      }).eq("id", uid);
-      if (upErr) throw new Error(upErr.message);
+      }).eq("id", uid).select();
+      if (updErr) throw new Error("تعذّر حفظ البيانات: " + updErr.message);
+      if (!updated || updated.length === 0) throw new Error("تعذّر حفظ بيانات المستندات — حاول مرة أخرى");
 
       onDone();
     } catch (e) {
@@ -206,4 +224,15 @@ function mapErr(m: string) {
   if (m.includes("already registered")) return "هذا البريد مسجّل بالفعل";
   if (m.includes("rate limit")) return "محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة";
   return m;
+}
+
+// تتأكد من وجود صف الكابتن (الذي ينشئه trigger) قبل التحديث، مع محاولات متعددة
+async function ensureCaptainRow(uid: string): Promise<void> {
+  for (let i = 0; i < 5; i++) {
+    const { data } = await supabase.from("captains").select("id").eq("id", uid).maybeSingle();
+    if (data) return;
+    // لو لم يُنشأ بعد، انتظر قليلاً ثم أنشئه يدويًا كخطة بديلة
+    await new Promise((r) => setTimeout(r, 500));
+    await supabase.from("captains").insert({ id: uid }).select();
+  }
 }

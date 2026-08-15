@@ -46,6 +46,17 @@ export default function AdminCaptains() {
     load();
   };
 
+  const remove = async (id: string, name: string) => {
+    const ok = window.confirm(
+      `⚠️ حذف نهائي\n\nهل أنت متأكد من حذف الكابتن "${name}" نهائيًا؟\nسيتم حذف حسابه ومستنداته بالكامل، ولا يمكن التراجع.`
+    );
+    if (!ok) return;
+    const { error } = await supabase.rpc("admin_delete_captain", { p_captain_id: id });
+    if (error) { alert("تعذّر الحذف: " + error.message); return; }
+    setSelected(null);
+    load();
+  };
+
   return (
     <section className="panel">
       <div className="panelHead">
@@ -78,14 +89,15 @@ export default function AdminCaptains() {
       </div>
 
       {selected && (
-        <CaptainDetail row={selected} onClose={() => setSelected(null)} onReview={review} />
+        <CaptainDetail row={selected} onClose={() => setSelected(null)} onReview={review} onRemove={remove} />
       )}
     </section>
   );
 }
 
-function CaptainDetail({ row, onClose, onReview }: {
+function CaptainDetail({ row, onClose, onReview, onRemove }: {
   row: CaptainRow; onClose: () => void; onReview: (id: string, status: string) => void;
+  onRemove: (id: string, name: string) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
   const docs = [
@@ -144,6 +156,8 @@ function CaptainDetail({ row, onClose, onReview }: {
         {(row.status === "rejected" || row.status === "suspended") && (
           <button className="approveBtn" onClick={() => onReview(row.id, "approved")}>إعادة التفعيل</button>
         )}
+
+        <button className="deleteBtn" onClick={() => onRemove(row.id, row.full_name)}>حذف الكابتن نهائيًا</button>
       </div>
     </div>
   );

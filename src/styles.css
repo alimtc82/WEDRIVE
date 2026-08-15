@@ -220,3 +220,6 @@ input,button{font-family:inherit}
 .approveBtn{flex:2;padding:12px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;cursor:pointer}
 .rejectBtn{flex:1;padding:12px;background:var(--navy);border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer}
 .suspendBtn{width:100%;padding:12px;background:var(--navy);border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer}
+
+.deleteBtn{width:100%;margin-top:10px;padding:11px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer;font-size:13px}
+.deleteBtn:hover{background:rgba(226,86,74,.1)}
