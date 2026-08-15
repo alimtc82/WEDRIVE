@@ -23,6 +23,12 @@ export default function CaptainApp() {
   const [online, setOnline] = useState(false);
   const [trips, setTrips] = useState<PendingTrip[]>([]);
   const [note, setNote] = useState("");
+  const [capStatus, setCapStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("captains").select("status,reject_reason").eq("id", profile!.id).single()
+      .then(({ data }) => { if (data) setCapStatus(data.status); });
+  }, [profile]);
 
   const loadPending = useCallback(async () => {
     const { data, error } = await supabase.rpc("pending_trips_for_captain");
@@ -59,6 +65,38 @@ export default function CaptainApp() {
     setNote("تم قبول الرحلة ✓");
     loadPending();
   };
+
+  // شاشة انتظار الموافقة أو الرفض
+  if (capStatus && capStatus !== "approved") {
+    return (
+      <div className="roleShell" dir="rtl">
+        <TopBar title="WE DRIVE — الكابتن" />
+        <main className="roleMain">
+          <section className="panel statusPanel">
+            {capStatus === "rejected" ? (
+              <>
+                <div className="statusIcon rej">!</div>
+                <h2>تم رفض الطلب</h2>
+                <p>للأسف لم يتم قبول طلبك. يمكنك التواصل مع الإدارة لمعرفة التفاصيل.</p>
+              </>
+            ) : capStatus === "suspended" ? (
+              <>
+                <div className="statusIcon rej">!</div>
+                <h2>الحساب موقوف</h2>
+                <p>تم إيقاف حسابك مؤقتًا. تواصل مع الإدارة.</p>
+              </>
+            ) : (
+              <>
+                <div className="statusIcon pend">⏳</div>
+                <h2>حسابك قيد المراجعة</h2>
+                <p>شكرًا لتسجيلك. يقوم فريق الإدارة بمراجعة مستنداتك، وسيتم تفعيل حسابك بعد الموافقة. ستظهر لك الرحلات فور التفعيل.</p>
+              </>
+            )}
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="roleShell" dir="rtl">

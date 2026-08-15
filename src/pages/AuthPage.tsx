@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 import type { UserRole } from "../lib/types";
 import { APP_VERSION } from "../lib/version";
+import CaptainRegister from "./CaptainRegister";
 
 type Mode = "signin" | "signup";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
+  const [captainReg, setCaptainReg] = useState(false);
+  const [captainDone, setCaptainDone] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +18,11 @@ export default function AuthPage() {
   const [role, setRole] = useState<UserRole>("customer");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // شاشة تسجيل الكابتن الكاملة
+  if (captainReg) {
+    return <CaptainRegister onBack={() => setCaptainReg(false)} onDone={() => { setCaptainReg(false); setCaptainDone(true); setMode("signin"); }} />;
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +62,9 @@ export default function AuthPage() {
           </div>
         </div>
 
+        {captainDone && (
+          <p className="okMsg">تم استلام طلبك ✓ حسابك قيد المراجعة من الإدارة، وسنفعّله بعد الموافقة.</p>
+        )}
         <div className="authTabs">
           <button className={mode === "signin" ? "on" : ""} onClick={() => { setMode("signin"); setError(""); }} type="button">
             تسجيل الدخول
@@ -75,7 +86,7 @@ export default function AuthPage() {
               <div className="rolePick">
                 <span>أنا</span>
                 <button type="button" className={role === "customer" ? "on" : ""} onClick={() => setRole("customer")}>عميل</button>
-                <button type="button" className={role === "captain" ? "on" : ""} onClick={() => setRole("captain")}>كابتن</button>
+                <button type="button" className={role === "captain" ? "on" : ""} onClick={() => setCaptainReg(true)}>كابتن</button>
               </div>
             </>
           )}

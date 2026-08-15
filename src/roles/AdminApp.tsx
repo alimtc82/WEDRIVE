@@ -3,12 +3,13 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import type { Settings } from "../lib/types";
 import TopBar from "../components/TopBar";
+import AdminCaptains from "./AdminCaptains";
 
 interface Stats { trips: number; captainsOnline: number; customers: number; revenue: number; }
 
 export default function AdminApp() {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<"overview" | "pricing">("overview");
+  const [tab, setTab] = useState<"overview" | "captains" | "pricing">("overview");
   const [stats, setStats] = useState<Stats>({ trips: 0, captainsOnline: 0, customers: 0, revenue: 0 });
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saveMsg, setSaveMsg] = useState("");
@@ -58,6 +59,7 @@ export default function AdminApp() {
       <main className="roleMain wide">
         <div className="adminTabs">
           <button className={tab === "overview" ? "on" : ""} onClick={() => setTab("overview")}>نظرة عامة</button>
+          <button className={tab === "captains" ? "on" : ""} onClick={() => setTab("captains")}>الكباتن</button>
           <button className={tab === "pricing" ? "on" : ""} onClick={() => setTab("pricing")}>إعدادات التسعير والنطاق</button>
         </div>
 
@@ -69,6 +71,8 @@ export default function AdminApp() {
             <div className="metric"><span>الإيرادات المكتملة</span><b>{stats.revenue.toFixed(2)} ج.م</b></div>
           </section>
         )}
+
+        {tab === "captains" && <AdminCaptains />}
 
         {tab === "pricing" && settings && (
           <section className="panel">

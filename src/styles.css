@@ -149,3 +149,74 @@ input,button{font-family:inherit}
 /* أزرار تحكم الخريطة (زر الموقع الحالي) */
 .maplibregl-ctrl-group{border-radius:8px!important;overflow:hidden}
 .maplibregl-ctrl-group button{width:34px!important;height:34px!important}
+
+/* ===== تسجيل الكابتن ===== */
+.authCard.wide{max-width:460px}
+.wizBar{display:flex;gap:6px;margin-bottom:16px}
+.wizBar span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.wizBar span.on{background:var(--green)}
+.stepHint{font-size:13px;color:var(--muted);margin:0 0 8px}
+.docGroup{background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.docGroup>b{display:block;font-size:14px;margin-bottom:10px}
+.docRow{display:flex;gap:10px;margin-bottom:10px}
+.docUpload{flex:1;aspect-ratio:3/2;border:1px dashed var(--line);border-radius:9px;cursor:pointer;overflow:hidden;background:var(--card)}
+.docEmpty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:12px}
+.docPlus{font-size:22px;line-height:1}
+.docPreview{position:relative;height:100%}
+.docPreview img{width:100%;height:100%;object-fit:cover}
+.docChange{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:2px 8px;border-radius:6px}
+.termsBox{background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:280px;overflow:auto;margin-bottom:12px}
+.termsBox h4{margin:0 0 10px;font-size:15px}
+.termsBox p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 8px}
+.agreeRow{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.agreeRow input{width:18px;height:18px;accent-color:var(--green)}
+.wizBtns{display:flex;gap:10px;margin-top:8px}
+.wizBtns .authSubmit{flex:2}
+.wizBack{flex:1;padding:12px;background:var(--navy);border:1px solid var(--line);color:var(--muted);border-radius:9px;cursor:pointer;font-weight:600}
+
+/* ===== شاشة حالة الكابتن ===== */
+.statusPanel{text-align:center;padding:36px 20px}
+.statusIcon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
+.statusIcon.pend{background:rgba(245,183,61,.15)}
+.statusIcon.rej{background:rgba(226,86,74,.15);color:var(--danger);font-weight:800}
+.statusPanel h2{margin:0 0 8px}
+.statusPanel p{color:var(--muted);font-size:14px;line-height:1.6;max-width:340px;margin:0 auto}
+
+/* ===== إدارة الكباتن (أدمن) ===== */
+.capFilter{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.capFilter button{padding:7px 14px;background:var(--navy);border:1px solid var(--line);color:var(--muted);border-radius:20px;cursor:pointer;font-size:13px}
+.capFilter button.on{border-color:var(--green);color:var(--ink);background:rgba(31,191,143,.1)}
+.capList{display:flex;flex-direction:column;gap:8px}
+.capRow{display:flex;align-items:center;gap:10px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.capRow:hover{border-color:var(--green)}
+.capAvatar{width:38px;height:38px;border-radius:50%;background:rgba(59,130,246,.18);color:#9cc0ff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.capMeta{flex:1;min-width:0}
+.capMeta b{display:block;font-size:14px}
+.capMeta span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.capBadge{font-size:11px;padding:4px 10px;border-radius:20px;flex:none}
+.capBadge.pending{background:rgba(245,183,61,.15);color:#f5b73d}
+.capBadge.approved{background:rgba(31,191,143,.15);color:var(--green)}
+.capBadge.rejected,.capBadge.suspended{background:rgba(226,86,74,.15);color:var(--danger)}
+
+/* مودال تفاصيل الكابتن */
+.modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modalCard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto}
+.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modalHead h3{margin:0;font-size:18px}
+.modalX{background:var(--navy);border:1px solid var(--line);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer}
+.detailGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.detailGrid>div{background:var(--navy);border-radius:8px;padding:9px 11px}
+.detailGrid span{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+.detailGrid b{font-size:13px;word-break:break-all}
+.expiryRow{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.expiryChip{font-size:12px;padding:7px 10px;border-radius:8px}
+.expiryChip.valid{background:rgba(31,191,143,.1);color:var(--green)}
+.expiryChip.expired{background:rgba(226,86,74,.12);color:var(--danger);font-weight:600}
+.docsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.docThumb{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--muted);font-size:11px;text-align:center}
+.docThumb img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.docThumbEmpty{width:100%;aspect-ratio:3/2;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.reviewBtns{display:flex;gap:10px}
+.approveBtn{flex:2;padding:12px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.rejectBtn{flex:1;padding:12px;background:var(--navy);border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer}
+.suspendBtn{width:100%;padding:12px;background:var(--navy);border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer}
