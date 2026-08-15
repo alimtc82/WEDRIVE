@@ -144,4 +144,4 @@ input,button{font-family:inherit}
 .distVal{color:var(--ink)!important}
 .fareBox>div{display:flex;flex-direction:column;gap:2px}
 
-.verTag{text-align:center;color:var(--muted);font-size:12px;margin-top:14px;opacity:.7}
+.verTag{position:fixed;bottom:12px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.6;pointer-events:none;z-index:5}

@@ -13,8 +13,19 @@ interface Props {
 
 // مركز افتراضي: القاهرة
 const CAIRO: LatLng = { lat: 30.0444, lng: 31.2357 };
-// نمط خريطة مجاني من OpenStreetMap عبر MapLibre demo tiles
-const STYLE = "https://tiles.openfreemap.org/styles/liberty";
+// نمط بلاطات نقطية من OpenStreetMap مباشرة — الأكثر موثوقية (بدون مفتاح)
+const STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap",
+    },
+  },
+  layers: [{ id: "osm", type: "raster", source: "osm" }],
+};
 
 export default function MapPicker({ label, color, value, address, onChange }: Props) {
   const [open, setOpen] = useState(false);
@@ -72,6 +83,16 @@ function MapPanel({
     });
     mapRef.current = map;
     if (value) setMarker(value);
+
+    // إصلاح مشكلة الخريطة الفاضية في MapLibre 6.x:
+    // إجبار إعادة الرسم بعد التحميل عبر resize + قفزة بسيطة تُحمّل كل البلاطات
+    map.on("load", () => {
+      map.resize();
+      const c = map.getCenter();
+      map.jumpTo({ center: [c.lng, c.lat], zoom: map.getZoom() });
+    });
+    // إعادة قياس إضافية بعد ظهور العنصر (لو كان مخفيًا لحظة الإنشاء)
+    setTimeout(() => map.resize(), 300);
 
     map.on("click", (e: maplibregl.MapMouseEvent) => {
       const loc = { lat: e.lngLat.lat, lng: e.lngLat.lng };
