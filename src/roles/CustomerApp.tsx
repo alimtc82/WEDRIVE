@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import type { Settings, TripKind } from "../lib/types";
+import { haversineKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
+import MapPicker from "../components/MapPicker";
 
 export default function CustomerApp() {
   const { profile } = useAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [pickup, setPickup] = useState("");
-  const [dropoff, setDropoff] = useState("");
-  const [distance, setDistance] = useState("");
+
+  const [pickup, setPickup] = useState<LatLng | null>(null);
+  const [pickupAddr, setPickupAddr] = useState("");
+  const [dropoff, setDropoff] = useState<LatLng | null>(null);
+  const [dropoffAddr, setDropoffAddr] = useState("");
+
   const [kind, setKind] = useState<TripKind>("in_city");
+  const [distance, setDistance] = useState<number | null>(null);
   const [fare, setFare] = useState<number | null>(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -22,37 +28,44 @@ export default function CustomerApp() {
     });
   }, []);
 
-  // حساب تقديري فوري (نفس معادلة الخادم) لعرضه قبل الطلب
   useEffect(() => {
-    if (!settings) return;
-    const d = parseFloat(distance);
-    if (!d || d <= 0) { setFare(null); return; }
-    const ppk = kind === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
+    if (!pickup || !dropoff || !settings) { setDistance(null); setFare(null); return; }
+    const d = haversineKm(pickup, dropoff);
+    setDistance(d);
+    const k = guessKind(d);
+    setKind(k);
+    const ppk = k === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
     const raw = Math.round(d * ppk * 100) / 100;
     setFare(Math.max(raw, settings.min_fare));
-  }, [distance, kind, settings]);
+  }, [pickup, dropoff, settings]);
+
+  useEffect(() => {
+    if (distance == null || !settings) return;
+    const ppk = kind === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
+    const raw = Math.round(distance * ppk * 100) / 100;
+    setFare(Math.max(raw, settings.min_fare));
+  }, [kind, distance, settings]);
 
   const requestTrip = async () => {
     setErr(""); setMsg("");
-    const d = parseFloat(distance);
-    if (!pickup.trim() || !dropoff.trim()) { setErr("اكتب مكان الانطلاق والوجهة"); return; }
-    if (!d || d <= 0) { setErr("اكتب مسافة صحيحة بالكيلومتر"); return; }
+    if (!pickup || !dropoff) { setErr("حدّد مكان الانطلاق والوجهة على الخريطة"); return; }
+    if (distance == null || distance <= 0) { setErr("تعذّر حساب المسافة"); return; }
 
     setBusy(true);
-    // ملاحظة: الإحداثيات مؤقتة (0,0) لحين ربط خرائط جوجل — الخادم يحسب السعر بنفسه
     const { error } = await supabase.rpc("create_trip", {
-      p_pickup_lng: 0, p_pickup_lat: 0, p_pickup_address: pickup.trim(),
-      p_dropoff_lng: 0, p_dropoff_lat: 0, p_dropoff_address: dropoff.trim(),
-      p_distance_km: d, p_kind: kind,
+      p_pickup_lng: pickup.lng, p_pickup_lat: pickup.lat, p_pickup_address: pickupAddr,
+      p_dropoff_lng: dropoff.lng, p_dropoff_lat: dropoff.lat, p_dropoff_address: dropoffAddr,
+      p_distance_km: distance, p_kind: kind,
     });
     setBusy(false);
 
     if (error) { setErr("تعذّر إنشاء الطلب: " + error.message); return; }
     setMsg("تم إرسال طلبك ✓ جارٍ البحث عن كابتن قريب");
-    setPickup(""); setDropoff(""); setDistance("");
+    setPickup(null); setPickupAddr(""); setDropoff(null); setDropoffAddr("");
+    setDistance(null); setFare(null);
   };
 
-  return (
+  const body = (
     <div className="roleShell" dir="rtl">
       <TopBar title="WE DRIVE — العميل" />
       <main className="roleMain">
@@ -62,36 +75,28 @@ export default function CustomerApp() {
             <p>أهلاً {profile?.full_name || ""}، حدّد وجهتك وسنبحث لك عن أقرب كابتن</p>
           </div>
 
-          <div className="mapPlaceholder">
-            <span>الخريطة — قريبًا (Google Maps)</span>
-          </div>
+          <MapPicker label="من" color="green" value={pickup} address={pickupAddr}
+            onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
+          <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
+            onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />
 
           <div className="field">
-            <label>من</label>
-            <input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="نقطة الانطلاق" />
-          </div>
-          <div className="field">
-            <label>إلى</label>
-            <input value={dropoff} onChange={(e) => setDropoff(e.target.value)} placeholder="الوجهة" />
-          </div>
-
-          <div className="row2">
-            <div className="field">
-              <label>المسافة (كم)</label>
-              <input value={distance} onChange={(e) => setDistance(e.target.value)} placeholder="مثال 18.6" inputMode="decimal" />
-            </div>
-            <div className="field">
-              <label>نوع الرحلة</label>
-              <div className="segmented">
-                <button className={kind === "in_city" ? "on" : ""} onClick={() => setKind("in_city")} type="button">داخل المدينة</button>
-                <button className={kind === "intercity" ? "on" : ""} onClick={() => setKind("intercity")} type="button">بين المدن</button>
-              </div>
+            <label>نوع الرحلة</label>
+            <div className="segmented">
+              <button className={kind === "in_city" ? "on" : ""} onClick={() => setKind("in_city")} type="button">داخل المدينة</button>
+              <button className={kind === "intercity" ? "on" : ""} onClick={() => setKind("intercity")} type="button">بين المدن</button>
             </div>
           </div>
 
           <div className="fareBox">
-            <span>السعر المقترح</span>
-            <b>{fare != null ? `${fare.toFixed(2)} ج.م` : "—"}</b>
+            <div>
+              <span>المسافة</span>
+              <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <span>السعر المقترح</span>
+              <b>{fare != null ? `${fare.toFixed(2)} ج.م` : "—"}</b>
+            </div>
           </div>
 
           {err && <p className="authError" role="alert">{err}</p>}
@@ -104,4 +109,6 @@ export default function CustomerApp() {
       </main>
     </div>
   );
+
+  return body;
 }

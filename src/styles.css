@@ -10,6 +10,11 @@ input,button{font-family:inherit}
 .fullCenter{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)}
 .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.inactiveCard{width:min(440px,calc(100% - 32px));padding:30px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.inactiveCard .brandMark{display:inline-block;margin-bottom:14px}
+.inactiveCard h1{margin:0 0 10px;font-size:20px}
+.inactiveCard p{margin:0 0 20px;color:var(--muted);font-size:14px;line-height:1.8}
+.inactiveCard .signOut{min-width:130px;color:var(--ink)}
 
 /* ===== Auth ===== */
 .authWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
@@ -100,3 +105,30 @@ input,button{font-family:inherit}
 .settingsGrid input:focus{outline:none;border-color:var(--green)}
 
 @media(max-width:520px){.row2{grid-template-columns:1fr}}
+
+/* ===== Map Picker (MapLibre) ===== */
+.mapPicker{margin-bottom:12px}
+.mapPicker>label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+.pickerField{width:100%;display:flex;align-items:center;gap:9px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px;cursor:pointer;text-align:right}
+.pickerField i{width:10px;height:10px;border-radius:50%;flex:none}
+.pickerField span{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickerMap{margin-top:8px;padding:10px;background:var(--navy);border:1px solid var(--line);border-radius:11px}
+.searchRow{display:flex;gap:6px;margin-bottom:8px}
+.pickerSearch{flex:1;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:14px}
+.pickerSearch:focus{outline:none;border-color:var(--green)}
+.searchBtn{padding:10px 16px;background:var(--green);color:#04241c;border:0;border-radius:8px;font-weight:700;cursor:pointer}
+.searchBtn:disabled{opacity:.6}
+.searchResults{list-style:none;margin:0 0 8px;padding:0;background:var(--card);border:1px solid var(--line);border-radius:8px;max-height:150px;overflow:auto}
+.searchResults li{padding:9px 11px;font-size:13px;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line)}
+.searchResults li:last-child{border-bottom:0}
+.searchResults li:hover{background:var(--navy)}
+.mapCanvas{width:100%;height:280px;border-radius:10px;overflow:hidden}
+.mapHint{font-size:12px;color:var(--muted);text-align:center;margin:8px 0 0}
+.pickerDone{width:100%;margin-top:8px;padding:9px;background:var(--green);color:#04241c;border:0;border-radius:8px;font-weight:700;cursor:pointer}
+.mapPin{width:22px;height:30px;background:var(--green);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:grab}
+.mapPin.green{background:var(--green)}
+.mapPin.red{background:var(--danger)}
+.distVal{color:var(--ink)!important}
+.fareBox>div{display:flex;flex-direction:column;gap:2px}
+
+.verTag{text-align:center;color:var(--muted);font-size:12px;margin-top:14px;opacity:.7}

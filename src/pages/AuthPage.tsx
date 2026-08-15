@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 import type { UserRole } from "../lib/types";
+import { APP_VERSION } from "../lib/version";
 
 type Mode = "signin" | "signup";
 
@@ -100,6 +101,7 @@ export default function AuthPage() {
           </button>
         </p>
       </div>
+      <p className="verTag">الإصدار {APP_VERSION}</p>
     </div>
   );
 }

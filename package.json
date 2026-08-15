@@ -1,6 +1,6 @@
 {
   "name": "we-drive-captain",
-  "version": "2.0.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
     "@vitejs/plugin-react": "6.0.2",
+    "maplibre-gl": "^6.3.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-router-dom": "^7.18.2",
