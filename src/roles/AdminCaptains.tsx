@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import { signedDocUrl } from "../lib/captainDocs";
+import { signedDocUrl, deleteCaptainDocs } from "../lib/captainDocs";
 
 interface CaptainRow {
   id: string; full_name: string; phone: string; email: string;
@@ -51,6 +51,8 @@ export default function AdminCaptains() {
       `⚠️ حذف نهائي\n\nهل أنت متأكد من حذف الكابتن "${name}" نهائيًا؟\nسيتم حذف حسابه ومستنداته بالكامل، ولا يمكن التراجع.`
     );
     if (!ok) return;
+    // حذف الملفات من التخزين أولًا (عبر Storage API)، ثم حذف الحساب
+    try { await deleteCaptainDocs(id); } catch { /* تجاهل لو لا توجد ملفات */ }
     const { error } = await supabase.rpc("admin_delete_captain", { p_captain_id: id });
     if (error) { alert("تعذّر الحذف: " + error.message); return; }
     setSelected(null);

@@ -19,6 +19,7 @@ const DOC_SLOTS = [
 export default function CaptainRegister({ onDone, onBack }: Props) {
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
   const [err, setErr] = useState("");
 
   // بيانات الحساب
@@ -83,15 +84,19 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       // انتظار قصير لضمان تنفيذ trigger إنشاء صف الكابتن، ثم التأكد من وجوده
       await ensureCaptainRow(uid);
 
-      // 2) رفع المستندات الستة (مع رسالة خطأ واضحة لكل صورة)
+      // 2) رفع المستندات الستة (مع رسالة تقدّم وخطأ واضحة لكل صورة)
       const paths: Record<string, string> = {};
+      let done = 0;
       for (const s of DOC_SLOTS) {
+        done++;
+        setProgress(`جارٍ رفع صورة ${done} من ${DOC_SLOTS.length}...`);
         try {
           paths[s.key] = await uploadCaptainDoc(uid, s.key, docs[s.key]!);
         } catch (upErr) {
           throw new Error(`فشل رفع صورة (${s.label}): ${upErr instanceof Error ? upErr.message : ""}`);
         }
       }
+      setProgress("جارٍ حفظ البيانات...");
 
       // 3) حفظ بيانات الكابتن (مسارات + تواريخ + الموافقة) والتأكد من نجاح الحفظ
       const { data: updated, error: updErr } = await supabase.from("captains").update({
@@ -110,6 +115,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       setErr(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setBusy(false);
+      setProgress("");
     }
   };
 
@@ -212,7 +218,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
           {step === 1 && <button type="button" className="wizBack" onClick={onBack}>إلغاء</button>}
           {step < 3
             ? <button type="button" className="authSubmit" onClick={next}>التالي</button>
-            : <button type="button" className="authSubmit" onClick={submit} disabled={busy}>{busy ? "جارٍ الإرسال..." : "إرسال الطلب"}</button>}
+            : <button type="button" className="authSubmit" onClick={submit} disabled={busy}>{busy ? (progress || "جارٍ الإرسال...") : "إرسال الطلب"}</button>}
         </div>
       </div>
       <p className="verTag">الإصدار {APP_VERSION}</p>
