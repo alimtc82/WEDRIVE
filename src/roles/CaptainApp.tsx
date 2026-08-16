@@ -34,7 +34,7 @@ export default function CaptainApp() {
   }, []);
 
   // تتبّع الموقع طالما الكابتن متصل أو في رحلة
-  useLocationTracker(online || hasActive);
+  const locStatus = useLocationTracker(online || hasActive);
 
   useEffect(() => {
     checkActive();
@@ -137,6 +137,12 @@ export default function CaptainApp() {
             <div>
               <h2>مرحبًا كابتن {profile?.full_name || ""}</h2>
               <p>{online ? "أنت متصل — تستقبل الطلبات القريبة" : "أنت غير متصل"}</p>
+              {online && locStatus.error && (
+                <p className="locWarn">⚠ {locStatus.error}</p>
+              )}
+              {online && locStatus.ok && (
+                <p className="locOk">📍 موقعك يُحدَّث بنجاح</p>
+              )}
             </div>
             <button className={`onlineToggle ${online ? "isOn" : ""}`} onClick={() => toggleOnline(!online)}>
               <i />{online ? "متصل" : "غير متصل"}

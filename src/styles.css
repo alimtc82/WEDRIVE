@@ -299,3 +299,7 @@ input,button{font-family:inherit}
 .tripDot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.4)}
 .tripDot.from{background:var(--green)}
 .tripDot.to{background:var(--danger)}
+
+/* حالة تتبّع الموقع للكابتن */
+.locWarn{font-size:12px;color:#f5b73d;background:rgba(245,183,61,.1);padding:6px 10px;border-radius:8px;margin-top:6px}
+.locOk{font-size:12px;color:var(--green);margin-top:6px}
