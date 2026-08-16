@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import StarRating from "./StarRating";
+import TripMap from "./TripMap";
 
 interface ActiveTrip {
   id: string; status: string; kind: string;
@@ -87,6 +88,11 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* خريطة حية أثناء الرحلة (تختفي عند التقييم) */}
+      {trip.status !== "completed" && (
+        <TripMap tripId={trip.id} status={trip.status} />
+      )}
 
       {/* بيانات الطرف الآخر */}
       {other && (

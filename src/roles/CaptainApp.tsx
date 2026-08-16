@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import TopBar from "../components/TopBar";
 import ActiveTrip from "../components/ActiveTrip";
+import { useLocationTracker } from "../lib/useLocationTracker";
 
 interface PendingTrip {
   trip_id: string;
@@ -31,6 +32,9 @@ export default function CaptainApp() {
     const { data } = await supabase.rpc("my_active_trip");
     setHasActive(!!data);
   }, []);
+
+  // تتبّع الموقع طالما الكابتن متصل أو في رحلة
+  useLocationTracker(online || hasActive);
 
   useEffect(() => {
     checkActive();
