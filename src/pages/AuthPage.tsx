@@ -63,7 +63,7 @@ export default function AuthPage() {
         </div>
 
         {captainDone && (
-          <p className="okMsg">تم استلام طلبك ✓ حسابك قيد المراجعة من الإدارة، وسنفعّله بعد الموافقة.</p>
+          <p className="okMsg">تم رفع صور المستندات واستلام طلبك بنجاح ✓ حسابك الآن قيد المراجعة من الإدارة، وسيتم تفعيله بعد الموافقة.</p>
         )}
         <div className="authTabs">
           <button className={mode === "signin" ? "on" : ""} onClick={() => { setMode("signin"); setError(""); }} type="button">

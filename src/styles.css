@@ -223,3 +223,64 @@ input,button{font-family:inherit}
 
 .deleteBtn{width:100%;margin-top:10px;padding:11px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer;font-size:13px}
 .deleteBtn:hover{background:rgba(226,86,74,.1)}
+
+/* تحذير صورة الكابتن */
+.docWarn{font-size:12px;color:#f5b73d;background:rgba(245,183,61,.1);padding:7px 10px;border-radius:8px;margin:0 0 10px}
+
+/* جدول الكباتن المالي (نظرة عامة أدمن) */
+.capFinList{display:flex;flex-direction:column;gap:12px}
+.capFinCard{background:var(--navy);border:1px solid var(--line);border-radius:12px;padding:14px}
+.capFinTop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.capFinTop b{display:block;font-size:15px}
+.capFinPhone{font-size:12px;color:var(--muted)}
+.capState{font-size:12px;padding:5px 12px;border-radius:20px;white-space:nowrap}
+.capState.ready{background:rgba(31,191,143,.15);color:var(--green)}
+.capState.busy{background:rgba(245,183,61,.15);color:#f5b73d}
+.capFinGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px}
+.capFinGrid>div{background:var(--card);border-radius:8px;padding:8px 10px}
+.capFinGrid span{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+.capFinGrid b{font-size:14px}
+.dueCell{background:rgba(226,86,74,.1)!important}
+.dueCell b{color:var(--danger)}
+.settleBtn{width:100%;padding:10px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;cursor:pointer;font-size:14px}
+
+/* ===== Lightbox عرض المستندات ===== */
+.docThumb{border:0;background:transparent;padding:0;cursor:pointer;display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:11px;text-align:center;font-family:inherit}
+.docThumb img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:8px;border:1px solid var(--line);transition:border-color .15s}
+.docThumb:hover img{border-color:var(--green)}
+.lbWrap{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:flex;align-items:center;justify-content:center}
+.lbClose{position:absolute;top:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:20px;cursor:pointer;z-index:210}
+.lbClose:hover{background:rgba(255,255,255,.22)}
+.lbNav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:30px;line-height:1;cursor:pointer;z-index:210;display:flex;align-items:center;justify-content:center}
+.lbNav:hover{background:rgba(255,255,255,.22)}
+.lbPrev{right:12px}
+.lbNext{left:12px}
+.lbBody{max-width:92vw;max-height:88vh;display:flex;flex-direction:column;align-items:center;gap:12px}
+.lbImg{max-width:92vw;max-height:80vh;object-fit:contain;border-radius:8px}
+.lbLoading{color:#fff;font-size:14px;padding:40px}
+.lbCaption{color:#fff;font-size:14px;background:rgba(255,255,255,.1);padding:6px 16px;border-radius:20px}
+
+/* ===== شاشة الرحلة النشطة ===== */
+.tripPanel{display:flex;flex-direction:column;gap:14px}
+.tripStatus{text-align:center}
+.tripStatusLabel{font-size:16px;font-weight:500;color:var(--green)}
+.tripSteps{display:flex;gap:6px;margin-top:10px}
+.tripStep{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.tripStep.on{background:var(--green)}
+.tripParty{display:flex;align-items:center;gap:12px;background:var(--navy);border:1px solid var(--line);border-radius:11px;padding:12px}
+.tripAvatar{width:46px;height:46px;border-radius:50%;background:rgba(59,130,246,.18);color:#9cc0ff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.tripPartyInfo{flex:1;min-width:0}
+.tripPartyInfo b{display:block;font-size:15px}
+.tripPartyInfo span{display:block;font-size:12px;color:var(--muted)}
+.tripVehicle{color:var(--ink)!important;margin-top:2px}
+.tripCall{width:44px;height:44px;border-radius:50%;background:rgba(31,191,143,.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;flex:none}
+.tripRoute{display:flex;flex-direction:column;gap:8px;padding:2px 0}
+.tripActions{display:flex;flex-direction:column;gap:10px}
+.cancelTrip{width:100%;padding:12px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:9px;font-weight:600;cursor:pointer}
+.ratingArea{display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+.ratingArea h3{margin:0;font-size:17px}
+.starRow{display:flex;gap:8px;direction:ltr}
+.starBtn{background:0;border:0;font-size:34px;color:var(--line);cursor:pointer;line-height:1;padding:0}
+.starBtn.on{color:#f5b73d}
+.ratingComment{width:100%;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px;font-family:inherit;resize:vertical}
+.ratingComment:focus{outline:none;border-color:var(--green)}

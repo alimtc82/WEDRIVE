@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import TopBar from "../components/TopBar";
+import ActiveTrip from "../components/ActiveTrip";
 
 interface PendingTrip {
   trip_id: string;
@@ -24,6 +25,20 @@ export default function CaptainApp() {
   const [trips, setTrips] = useState<PendingTrip[]>([]);
   const [note, setNote] = useState("");
   const [capStatus, setCapStatus] = useState<string | null>(null);
+  const [hasActive, setHasActive] = useState<boolean>(false);
+
+  const checkActive = useCallback(async () => {
+    const { data } = await supabase.rpc("my_active_trip");
+    setHasActive(!!data);
+  }, []);
+
+  useEffect(() => {
+    checkActive();
+    const ch = supabase.channel("cap-active")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => checkActive())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [checkActive]);
 
   useEffect(() => {
     supabase.from("captains").select("status,reject_reason").eq("id", profile!.id).single()
@@ -93,6 +108,17 @@ export default function CaptainApp() {
               </>
             )}
           </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (hasActive) {
+    return (
+      <div className="roleShell" dir="rtl">
+        <TopBar title="WE DRIVE — الكابتن" />
+        <main className="roleMain">
+          <ActiveTrip onDone={() => { setHasActive(false); checkActive(); loadPending(); }} />
         </main>
       </div>
     );

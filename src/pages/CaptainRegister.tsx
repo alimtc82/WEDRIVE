@@ -14,6 +14,10 @@ const DOC_SLOTS = [
   { key: "vehicle_license_back", label: "رخصة السيارة - الظهر" },
   { key: "driver_license_front", label: "رخصة القيادة - الوجه" },
   { key: "driver_license_back", label: "رخصة القيادة - الظهر" },
+  { key: "selfie_photo", label: "صورة الكابتن الشخصية" },
+  { key: "car_front_photo", label: "السيارة من الأمام" },
+  { key: "car_back_photo", label: "السيارة من الخلف" },
+  { key: "plate_photo", label: "اللوحة المعدنية" },
 ];
 
 export default function CaptainRegister({ onDone, onBack }: Props) {
@@ -45,7 +49,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
   };
 
   const validateStep2 = () => {
-    for (const s of DOC_SLOTS) if (!docs[s.key]) return "من فضلك ارفع كل صور المستندات (6 صور)";
+    for (const s of DOC_SLOTS) if (!docs[s.key]) return "من فضلك ارفع كل الصور المطلوبة";
     if (!idExpiry || !vehExpiry || !drvExpiry) return "أدخل تواريخ انتهاء المستندات";
     if (idExpiry <= today || vehExpiry <= today || drvExpiry <= today)
       return "أحد المستندات منتهي — يجب أن تكون كل المستندات سارية";
@@ -98,18 +102,26 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       }
       setProgress("جارٍ حفظ البيانات...");
 
-      // 3) حفظ بيانات الكابتن (مسارات + تواريخ + الموافقة) والتأكد من نجاح الحفظ
-      const { data: updated, error: updErr } = await supabase.from("captains").update({
-        ...paths,
-        id_card_expiry: idExpiry,
-        vehicle_license_expiry: vehExpiry,
-        driver_license_expiry: drvExpiry,
-        terms_accepted_at: new Date().toISOString(),
-        status: "pending",
-      }).eq("id", uid).select();
-      if (updErr) throw new Error("تعذّر حفظ البيانات: " + updErr.message);
-      if (!updated || updated.length === 0) throw new Error("تعذّر حفظ بيانات المستندات — حاول مرة أخرى");
+      // 3) حفظ بيانات الكابتن عبر دالة آمنة (تتجاوز مشكلة توقيت RLS)
+      const { error: saveErr } = await supabase.rpc("save_captain_docs", {
+        p_id_card_front: paths.id_card_front,
+        p_id_card_back: paths.id_card_back,
+        p_id_card_expiry: idExpiry,
+        p_vehicle_license_front: paths.vehicle_license_front,
+        p_vehicle_license_back: paths.vehicle_license_back,
+        p_vehicle_license_expiry: vehExpiry,
+        p_driver_license_front: paths.driver_license_front,
+        p_driver_license_back: paths.driver_license_back,
+        p_driver_license_expiry: drvExpiry,
+        p_selfie_photo: paths.selfie_photo,
+        p_car_front_photo: paths.car_front_photo,
+        p_car_back_photo: paths.car_back_photo,
+        p_plate_photo: paths.plate_photo,
+      });
+      if (saveErr) throw new Error("تعذّر حفظ البيانات: " + saveErr.message);
 
+      setProgress("تم رفع كل الصور بنجاح ✓");
+      await new Promise((r) => setTimeout(r, 900));
       onDone();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "حدث خطأ");
@@ -187,6 +199,25 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
               <label>تاريخ انتهاء رخصة القيادة
                 <input type="date" value={drvExpiry} min={today} onChange={(e) => setDrvExpiry(e.target.value)} />
               </label>
+            </div>
+
+            <div className="docGroup">
+              <b>صورة الكابتن الشخصية</b>
+              <p className="docWarn">⚠ صورة واضحة للوجه، بدون فلتر وبدون نظارة</p>
+              <div className="docRow">
+                <DocUpload label="صورة شخصية" file={docs.selfie_photo} onPick={(f) => setDocs({ ...docs, selfie_photo: f })} />
+              </div>
+            </div>
+
+            <div className="docGroup">
+              <b>صور السيارة</b>
+              <div className="docRow">
+                <DocUpload label="من الأمام" file={docs.car_front_photo} onPick={(f) => setDocs({ ...docs, car_front_photo: f })} />
+                <DocUpload label="من الخلف" file={docs.car_back_photo} onPick={(f) => setDocs({ ...docs, car_back_photo: f })} />
+              </div>
+              <div className="docRow">
+                <DocUpload label="اللوحة المعدنية (واضحة)" file={docs.plate_photo} onPick={(f) => setDocs({ ...docs, plate_photo: f })} />
+              </div>
             </div>
           </div>
         )}

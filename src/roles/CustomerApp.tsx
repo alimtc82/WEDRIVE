@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import type { Settings, TripKind } from "../lib/types";
 import { haversineKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
 import MapPicker from "../components/MapPicker";
+import ActiveTrip from "../components/ActiveTrip";
 
 export default function CustomerApp() {
   const { profile } = useAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [hasActive, setHasActive] = useState<boolean | null>(null);
 
   const [pickup, setPickup] = useState<LatLng | null>(null);
   const [pickupAddr, setPickupAddr] = useState("");
@@ -21,6 +23,19 @@ export default function CustomerApp() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const checkActive = useCallback(async () => {
+    const { data } = await supabase.rpc("my_active_trip");
+    setHasActive(!!data);
+  }, []);
+
+  useEffect(() => {
+    checkActive();
+    const ch = supabase.channel("cust-active")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => checkActive())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [checkActive]);
 
   useEffect(() => {
     supabase.from("settings").select("*").single().then(({ data }) => {
@@ -69,6 +84,9 @@ export default function CustomerApp() {
     <div className="roleShell" dir="rtl">
       <TopBar title="WE DRIVE — العميل" />
       <main className="roleMain">
+        {hasActive ? (
+          <ActiveTrip onDone={() => { setHasActive(false); checkActive(); }} />
+        ) : (
         <section className="panel">
           <div className="panelHead">
             <h2>اطلب رحلة</h2>
@@ -106,6 +124,7 @@ export default function CustomerApp() {
             {busy ? "جارٍ الإرسال..." : "اطلب رحلة"}
           </button>
         </section>
+        )}
       </main>
     </div>
   );

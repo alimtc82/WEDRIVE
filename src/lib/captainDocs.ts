@@ -7,20 +7,21 @@ export async function uploadCaptainDoc(
   slot: string,
   file: File
 ): Promise<string> {
-  const compressed = await compressImage(file);
-  const path = `${userId}/${slot}.jpg`;
+  const { file: compressed, format } = await compressImage(file);
+  const ext = format === "webp" ? "webp" : "jpg";
+  const contentType = format === "webp" ? "image/webp" : "image/jpeg";
+  const path = `${userId}/${slot}.${ext}`;
 
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const { error } = await supabase.storage
         .from("captain-docs")
-        .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+        .upload(path, compressed, { upsert: true, contentType });
       if (error) throw new Error(error.message);
       return path; // نجح
     } catch (e) {
       lastErr = e;
-      // انتظار قصير متزايد قبل إعادة المحاولة
       await new Promise((r) => setTimeout(r, attempt * 1000));
     }
   }

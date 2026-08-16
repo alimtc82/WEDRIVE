@@ -4,34 +4,21 @@ import { useAuth } from "../lib/AuthContext";
 import type { Settings } from "../lib/types";
 import TopBar from "../components/TopBar";
 import AdminCaptains from "./AdminCaptains";
-
-interface Stats { trips: number; captainsOnline: number; customers: number; revenue: number; }
+import AdminOverview from "./AdminOverview";
 
 export default function AdminApp() {
   const { profile } = useAuth();
   const [tab, setTab] = useState<"overview" | "captains" | "pricing">("overview");
-  const [stats, setStats] = useState<Stats>({ trips: 0, captainsOnline: 0, customers: 0, revenue: 0 });
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saveMsg, setSaveMsg] = useState("");
   const [busy, setBusy] = useState(false);
-
-  const loadStats = async () => {
-    const [{ count: trips }, { count: online }, { count: custs }, { data: completed }] = await Promise.all([
-      supabase.from("trips").select("*", { count: "exact", head: true }),
-      supabase.from("captains").select("*", { count: "exact", head: true }).eq("is_online", true),
-      supabase.from("customers").select("*", { count: "exact", head: true }),
-      supabase.from("trips").select("price").eq("status", "completed"),
-    ]);
-    const revenue = (completed || []).reduce((s: number, r: { price: number }) => s + Number(r.price), 0);
-    setStats({ trips: trips || 0, captainsOnline: online || 0, customers: custs || 0, revenue });
-  };
 
   const loadSettings = async () => {
     const { data } = await supabase.from("settings").select("*").single();
     if (data) setSettings(data as Settings);
   };
 
-  useEffect(() => { loadStats(); loadSettings(); }, []);
+  useEffect(() => { loadSettings(); }, []);
 
   const saveSettings = async () => {
     if (!settings) return;
@@ -63,14 +50,7 @@ export default function AdminApp() {
           <button className={tab === "pricing" ? "on" : ""} onClick={() => setTab("pricing")}>إعدادات التسعير والنطاق</button>
         </div>
 
-        {tab === "overview" && (
-          <section className="metricsGrid">
-            <div className="metric"><span>إجمالي الرحلات</span><b>{stats.trips}</b></div>
-            <div className="metric"><span>كباتن متصلون</span><b>{stats.captainsOnline}</b></div>
-            <div className="metric"><span>العملاء</span><b>{stats.customers}</b></div>
-            <div className="metric"><span>الإيرادات المكتملة</span><b>{stats.revenue.toFixed(2)} ج.م</b></div>
-          </section>
-        )}
+        {tab === "overview" && <AdminOverview />}
 
         {tab === "captains" && <AdminCaptains />}
 

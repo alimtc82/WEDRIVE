@@ -8,6 +8,7 @@ interface CaptainRow {
   id_card_front: string; id_card_back: string; id_card_expiry: string;
   vehicle_license_front: string; vehicle_license_back: string; vehicle_license_expiry: string;
   driver_license_front: string; driver_license_back: string; driver_license_expiry: string;
+  selfie_photo: string; car_front_photo: string; car_back_photo: string; plate_photo: string;
   terms_accepted_at: string; reject_reason: string | null;
   rating_avg: number; trips_count: number;
 }
@@ -102,6 +103,7 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
   onRemove: (id: string, name: string) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const docs = [
     { label: "البطاقة - الوجه", path: row.id_card_front },
     { label: "البطاقة - الظهر", path: row.id_card_back },
@@ -109,7 +111,11 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
     { label: "رخصة السيارة - الظهر", path: row.vehicle_license_back },
     { label: "رخصة القيادة - الوجه", path: row.driver_license_front },
     { label: "رخصة القيادة - الظهر", path: row.driver_license_back },
-  ];
+    { label: "صورة الكابتن", path: row.selfie_photo },
+    { label: "السيارة - أمام", path: row.car_front_photo },
+    { label: "السيارة - خلف", path: row.car_back_photo },
+    { label: "اللوحة المعدنية", path: row.plate_photo },
+  ].filter((d) => d.path);
   const expiries = [
     { label: "انتهاء البطاقة", date: row.id_card_expiry },
     { label: "انتهاء رخصة السيارة", date: row.vehicle_license_expiry },
@@ -143,8 +149,12 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
         </div>
 
         <div className="docsGrid">
-          {docs.map((d, i) => <DocThumb key={i} label={d.label} path={d.path} />)}
+          {docs.map((d, i) => <DocThumb key={i} label={d.label} path={d.path} onOpen={() => setLightbox(i)} />)}
         </div>
+
+        {lightbox !== null && (
+          <DocLightbox docs={docs} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(null)} />
+        )}
 
         {row.status === "pending" && (
           <div className="reviewBtns">
@@ -165,13 +175,58 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
   );
 }
 
-function DocThumb({ label, path }: { label: string; path: string }) {
+function DocThumb({ label, path, onOpen }: { label: string; path: string; onOpen: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { if (path) signedDocUrl(path).then(setUrl); }, [path]);
   return (
-    <a className="docThumb" href={url || undefined} target="_blank" rel="noreferrer">
+    <button type="button" className="docThumb" onClick={onOpen} aria-label={`عرض ${label}`}>
       {url ? <img src={url} alt={label} /> : <div className="docThumbEmpty">—</div>}
       <span>{label}</span>
-    </a>
+    </button>
+  );
+}
+
+function DocLightbox({ docs, index, onIndex, onClose }: {
+  docs: { label: string; path: string }[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUrl(null);
+    signedDocUrl(docs[index].path).then(setUrl);
+  }, [docs, index]);
+
+  const prev = () => onIndex((index - 1 + docs.length) % docs.length);
+  const next = () => onIndex((index + 1) % docs.length);
+
+  // إغلاق/تنقّل بلوحة المفاتيح
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") next();
+      if (e.key === "ArrowRight") prev();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+
+  return (
+    <div className="lbWrap" onClick={onClose}>
+      <button className="lbClose" onClick={onClose} aria-label="خروج">✕</button>
+
+      <button className="lbNav lbPrev" onClick={(e) => { e.stopPropagation(); prev(); }} aria-label="السابق">‹</button>
+
+      <div className="lbBody" onClick={(e) => e.stopPropagation()}>
+        {url
+          ? <img src={url} alt={docs[index].label} className="lbImg" />
+          : <div className="lbLoading">جارٍ التحميل...</div>}
+        <div className="lbCaption">{docs[index].label} · {index + 1} / {docs.length}</div>
+      </div>
+
+      <button className="lbNav lbNext" onClick={(e) => { e.stopPropagation(); next(); }} aria-label="التالي">›</button>
+    </div>
   );
 }
