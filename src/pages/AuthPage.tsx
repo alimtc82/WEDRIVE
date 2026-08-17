@@ -5,7 +5,7 @@ import { BrandMark } from "../lib/brand";
 import CaptainRegister from "./CaptainRegister";
 import "../authV2.css";
 
-type Screen = "welcome" | "signin" | "signup";
+type Screen = "welcome" | "signin" | "register" | "signupCustomer";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -19,7 +19,7 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // شاشة تسجيل الكابتن الكاملة (بدون تغيير)
+  // شاشة تسجيل الكابتن الكاملة بالمستندات (بدون أي تغيير في التدفق)
   if (captainReg) {
     return <CaptainRegister onBack={() => setCaptainReg(false)} onDone={() => { setCaptainReg(false); setCaptainDone(true); setScreen("signin"); }} />;
   }
@@ -34,7 +34,7 @@ export default function AuthPage() {
       setError("من فضلك أدخل البريد وكلمة المرور");
       return;
     }
-    if (screen === "signup" && !fullName.trim()) {
+    if (screen === "signupCustomer" && !fullName.trim()) {
       setError("من فضلك أدخل الاسم بالكامل");
       return;
     }
@@ -44,7 +44,7 @@ export default function AuthPage() {
       if (screen === "signin") {
         await signIn(email.trim(), password);
       } else {
-        // إنشاء حساب العميل — الكابتن له مسار تسجيل مستقل بالمستندات
+        // إنشاء حساب عميل — الكابتن له مسار مستقل بالمستندات
         await signUp({ email: email.trim(), password, fullName: fullName.trim(), phone: phone.trim(), role: "customer" });
       }
     } catch (err) {
@@ -78,20 +78,54 @@ export default function AuthPage() {
               </svg>
             </div>
 
-            {/* شيت اختيار الدور */}
+            {/* شيت تسجيل الدخول حسب الدور */}
             <div className="avSheet">
               <div className="avGrab" />
               {captainDone && (
                 <p className="okMsg">تم رفع صور المستندات واستلام طلبك بنجاح ✓ حسابك الآن قيد المراجعة من الإدارة، وسيتم تفعيله بعد الموافقة.</p>
               )}
-              <button type="button" className="avRole customer" onClick={() => go("signup")}>
+              <button type="button" className="avRole customer" onClick={() => go("signin")}>
                 <span className="avRoleIc">🧍</span>
-                <span className="avRoleTxt"><b>أنا عميل</b><small>اطلب مشوارك وحدد سعرك</small></span>
+                <span className="avRoleTxt"><b>أنا عميل</b><small>سجّل دخولك واطلب مشوارك</small></span>
+                <i className="avChev">‹</i>
+              </button>
+              <button type="button" className="avRole captain" onClick={() => go("signin")}>
+                <span className="avRoleIc">🚗</span>
+                <span className="avRoleTxt"><b>أنا كابتن</b><small>سجّل دخولك واستقبل الطلبات</small></span>
+                <i className="avChev">‹</i>
+              </button>
+
+              <div className="avDivider"><span>جديد في كابتن بنها؟</span></div>
+              <button type="button" className="avBtnNew" onClick={() => go("register")}>
+                سجّل حساب جديد ✦
+              </button>
+            </div>
+          </>
+        ) : screen === "register" ? (
+          <>
+            {/* اختيار نوع الحساب الجديد */}
+            <div className="avFormHead">
+              <button type="button" className="avBack" onClick={() => go("welcome")} aria-label="رجوع">→</button>
+              <div>
+                <h2>إنشاء حساب جديد</h2>
+                <p>اختر نوع الحساب المناسب ليك</p>
+              </div>
+            </div>
+
+            <div className="avSheet">
+              <div className="avBrandMini"><BrandMark size={30} /><b>كابتن بنها</b></div>
+              <button type="button" className="avRole customer" onClick={() => go("signupCustomer")}>
+                <span className="avRoleIc">🧍</span>
+                <span className="avRoleTxt"><b>حساب عميل جديد</b><small>سجّل في دقيقة واطلب رحلتك فورًا</small></span>
                 <i className="avChev">‹</i>
               </button>
               <button type="button" className="avRole captain" onClick={() => setCaptainReg(true)}>
                 <span className="avRoleIc">🚗</span>
-                <span className="avRoleTxt"><b>أنا كابتن</b><small>استقبل الطلبات واكسب معنا</small></span>
+                <span className="avRoleTxt">
+                  <b>حساب كابتن جديد</b>
+                  <small>انضم لأسطولنا واكسب معنا</small>
+                  <span className="avDocBadge">📄 يتطلب مستندات للتحقق</span>
+                </span>
                 <i className="avChev">‹</i>
               </button>
               <p className="avSwitch">عندك حساب بالفعل؟ <button type="button" onClick={() => go("signin")}>سجّل الدخول</button></p>
@@ -101,7 +135,7 @@ export default function AuthPage() {
           <>
             {/* شاشة الدخول / إنشاء حساب عميل */}
             <div className="avFormHead">
-              <button type="button" className="avBack" onClick={() => go("welcome")} aria-label="رجوع">→</button>
+              <button type="button" className="avBack" onClick={() => go(screen === "signupCustomer" ? "register" : "welcome")} aria-label="رجوع">→</button>
               <div>
                 <h2>{screen === "signin" ? "تسجيل الدخول" : "حساب عميل جديد"}</h2>
                 <p>{screen === "signin" ? "أهلًا بعودتك إلى كابتن بنها" : "خطوة واحدة وتبدأ تطلب مشاويرك"}</p>
@@ -114,7 +148,7 @@ export default function AuthPage() {
                 <p className="okMsg">تم استلام طلب الكابتن بنجاح ✓ حسابك قيد المراجعة وسيُفعَّل بعد الموافقة.</p>
               )}
               <form onSubmit={submit}>
-                {screen === "signup" && (
+                {screen === "signupCustomer" && (
                   <>
                     <div className="avField">
                       <i>👤</i>
@@ -143,8 +177,8 @@ export default function AuthPage() {
               </form>
               <p className="avSwitch">
                 {screen === "signin" ? "ليس لديك حساب؟" : "لديك حساب بالفعل؟"}{" "}
-                <button type="button" onClick={() => go(screen === "signin" ? "signup" : "signin")}>
-                  {screen === "signin" ? "أنشئ حساب" : "سجّل الدخول"}
+                <button type="button" onClick={() => go(screen === "signin" ? "register" : "signin")}>
+                  {screen === "signin" ? "سجّل حساب جديد" : "سجّل الدخول"}
                 </button>
               </p>
             </div>

@@ -32,6 +32,15 @@
 .avRole small{color:var(--muted);font-size:12.5px}
 .avChev{color:var(--muted);font-size:22px;font-style:normal;flex:none}
 
+/* فاصل + زر إنشاء حساب جديد */
+.avDivider{display:flex;align-items:center;gap:12px;margin:16px 0 12px;color:var(--muted);font-size:12.5px}
+.avDivider::before,.avDivider::after{content:'';flex:1;height:1px;background:var(--line)}
+.avBtnNew{width:100%;padding:15px;background:linear-gradient(135deg,#2dd4a0,#1fbf8f);color:#04241a;border:0;border-radius:16px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 10px 26px rgba(31,191,143,.35);font-family:inherit;transition:transform .1s}
+.avBtnNew:active{transform:scale(.98)}
+
+/* بادج المستندات المطلوبة */
+.avDocBadge{display:inline-block;font-size:11px;color:#93c5fd;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);padding:3px 10px;border-radius:99px;margin-top:6px}
+
 /* شاشات النماذج */
 .avFormHead{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .avBack{width:40px;height:40px;border-radius:12px;background:var(--navy);border:1px solid var(--line);color:var(--ink);font-size:18px;cursor:pointer;flex:none;font-family:inherit}
