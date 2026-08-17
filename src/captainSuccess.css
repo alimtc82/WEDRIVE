@@ -1,0 +1,5 @@
+/* شاشة نجاح تسجيل الكابتن */
+.capSuccess{text-align:center;padding:26px 10px}
+.capSuccessIc{width:76px;height:76px;margin:0 auto 16px;border-radius:50%;background:rgba(31,191,143,.14);border:2px solid var(--green);color:var(--green);font-size:38px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(31,191,143,.25)}
+.capSuccess h2{margin:0 0 8px;color:var(--ink)}
+.capSuccess p{color:var(--muted);font-size:14px;line-height:1.8;margin:0 0 18px}

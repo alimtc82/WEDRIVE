@@ -20,6 +20,13 @@ const DOC_SLOTS = [
   { key: "plate_photo", label: "اللوحة المعدنية" },
 ];
 
+// حد أقصى لتاريخ الانتهاء = N سنوات من اليوم (yyyy-mm-dd)
+function maxYears(years: number): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().split("T")[0];
+}
+
 export default function CaptainRegister({ onDone, onBack }: Props) {
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -53,6 +60,10 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
     if (!idExpiry || !vehExpiry || !drvExpiry) return "أدخل تواريخ انتهاء المستندات";
     if (idExpiry <= today || vehExpiry <= today || drvExpiry <= today)
       return "أحد المستندات منتهي — يجب أن تكون كل المستندات سارية";
+    // حدود الصلاحية القصوى من يوم التسجيل (بدون إشعار مسبق — رسالة عند الخطأ فقط)
+    if (vehExpiry > maxYears(3)) return "تأكد من تاريخ رخصة السيارة";
+    if (drvExpiry > maxYears(10)) return "تأكد من تاريخ رخصة القيادة";
+    if (idExpiry > maxYears(7)) return "تأكد من تاريخ البطاقة الشخصية";
     return "";
   };
 
@@ -64,6 +75,9 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
 
   const submit = async () => {
     if (!agreed) { setErr("يجب الموافقة على شروط العمل"); return; }
+    // إعادة التحقق من التواريخ عند الإرسال أيضًا
+    const ve = validateStep2();
+    if (ve) { setErr(ve); setStep(2); return; }
     setErr(""); setBusy(true);
     try {
       // 1) إنشاء الحساب بدور كابتن
@@ -88,7 +102,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       // انتظار قصير لضمان تنفيذ trigger إنشاء صف الكابتن، ثم التأكد من وجوده
       await ensureCaptainRow(uid);
 
-      // 2) رفع المستندات الستة (مع رسالة تقدّم وخطأ واضحة لكل صورة)
+      // 2) رفع صور المستندات (مع رسالة تقدّم وخطأ واضحة لكل صورة)
       const paths: Record<string, string> = {};
       let done = 0;
       for (const s of DOC_SLOTS) {
@@ -118,11 +132,10 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
         p_car_back_photo: paths.car_back_photo,
         p_plate_photo: paths.plate_photo,
       });
-      if (saveErr) throw new Error("تعذّر حفظ البيانات: " + saveErr.message);
+      if (saveErr) throw new Error(saveErr.message);
 
-      setProgress("تم رفع كل الصور بنجاح ✓");
-      await new Promise((r) => setTimeout(r, 900));
-      onDone();
+      // 4) شاشة نجاح واضحة
+      setStep(4);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
@@ -130,6 +143,23 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
       setProgress("");
     }
   };
+
+  // شاشة النجاح بعد رفع المستندات وحفظها
+  if (step === 4) {
+    return (
+      <div className="authWrap" dir="rtl">
+        <div className="authCard">
+          <div className="capSuccess">
+            <div className="capSuccessIc">✓</div>
+            <h2>تم رفع صور المستندات بنجاح</h2>
+            <p>تم استلام طلبك ✓ حسابك الآن قيد المراجعة من الإدارة، وسيتم تفعيله بعد الموافقة.</p>
+            <button className="authSubmit" onClick={onDone}>تسجيل الدخول</button>
+          </div>
+        </div>
+        <p className="verTag">الإصدار {APP_VERSION}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="authWrap" dir="rtl">
@@ -226,7 +256,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
         {step === 3 && (
           <div className="authForm">
             <div className="termsBox">
-              <h4>شروط العمل مع WE DRIVE</h4>
+              <h4>شروط العمل مع كابتن بنها</h4>
               <p>1. الالتزام بحسن معاملة العملاء والحفاظ على سلامتهم طوال الرحلة.</p>
               <p>2. الحفاظ على صلاحية جميع المستندات (البطاقة، رخصة السيارة، رخصة القيادة) وتحديثها فور انتهائها.</p>
               <p>3. الالتزام بالأسعار المعتمدة من التطبيق وتحصيل الأجرة نقدًا فقط.</p>
@@ -235,7 +265,6 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
               <p>6. يحق للشركة إيقاف الحساب عند مخالفة الشروط أو تلقّي شكاوى متكررة.</p>
               <p>7. الكابتن مسؤول عن أي مخالفات مرورية أو قانونية أثناء عمله.</p>
               <p>8. يوافق الكابتن على تتبّع موقعه الجغرافي أثناء اتصاله بالتطبيق (حالة "متصل" أو أثناء رحلة)، وذلك لأغراض توزيع الرحلات ومتابعة الخدمة وسلامة العملاء. يتوقف التتبّع تلقائيًا عند قطع الاتصال.</p>
-              <p>8. يوافق الكابتن على تتبّع موقعه الجغرافي أثناء اتصاله بالتطبيق، وذلك لأغراض توزيع الرحلات ومتابعتها وضمان سلامة العملاء. يتوقف التتبّع فور قطع الاتصال.</p>
             </div>
             <label className="agreeRow">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
