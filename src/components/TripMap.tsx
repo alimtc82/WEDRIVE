@@ -3,6 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import { carMarkerSvg } from "../lib/carMarker";
+import { fetchRoute, type Coord } from "../lib/routing";
 
 interface Props { tripId: string; status: string; }
 interface MapData {
@@ -33,22 +34,39 @@ export default function TripMap({ tripId, status }: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markers = useRef<{ captain?: maplibregl.Marker; from?: maplibregl.Marker; to?: maplibregl.Marker }>({});
+  const routeCache = useRef<Record<string, Coord[]>>({});
   const [ready, setReady] = useState(false);
 
   // قبل بدء الرحلة: الخط بين الكابتن ونقطة العميل. بعد البدء: بين الانطلاق والوجهة.
   const beforeStart = status === "accepted" || status === "arrived";
 
-  const drawLine = useCallback((a: [number, number], b: [number, number]) => {
+  const paintLine = useCallback((coords: Coord[]) => {
     const map = mapRef.current; if (!map) return;
-    const data = { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: [a, b] } };
+    const data = { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
     const src = map.getSource("route") as maplibregl.GeoJSONSource | undefined;
     if (src) src.setData(data);
     else {
       map.addSource("route", { type: "geojson", data });
       map.addLayer({ id: "route", type: "line", source: "route",
-        paint: { "line-color": "#1fbf8f", "line-width": 3, "line-dasharray": [2, 1] } });
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": beforeStart ? "#3b82f6" : "#1fbf8f", "line-width": 5, "line-opacity": 0.85 } });
     }
-  }, []);
+    // تحديث اللون حسب المرحلة
+    if (map.getLayer("route")) {
+      map.setPaintProperty("route", "line-color", beforeStart ? "#3b82f6" : "#1fbf8f");
+    }
+  }, [beforeStart]);
+
+  // يرسم المسار الحقيقي على الشوارع (مع تخزين مؤقت وfallback للخط المستقيم)
+  const drawLine = useCallback(async (a: Coord, b: Coord) => {
+    const key = `${a[0].toFixed(4)},${a[1].toFixed(4)}-${b[0].toFixed(4)},${b[1].toFixed(4)}`;
+    if (routeCache.current[key]) { paintLine(routeCache.current[key]); return; }
+    // ارسم الخط المستقيم فورًا ثم استبدله بالمسار الحقيقي عند وصوله
+    paintLine([a, b]);
+    const route = await fetchRoute(a, b);
+    routeCache.current[key] = route;
+    paintLine(route);
+  }, [paintLine]);
 
   const update = useCallback((d: MapData) => {
     const map = mapRef.current; if (!map) return;

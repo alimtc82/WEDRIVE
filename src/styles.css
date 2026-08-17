@@ -363,3 +363,8 @@ select{
 }
 select:focus{outline:none;border-color:var(--green)}
 select option{background:var(--card);color:var(--ink)}
+
+/* مسار رحلة الكابتن على خريطة الأدمن */
+.routeBanner{display:flex;justify-content:space-between;align-items:center;background:rgba(59,130,246,.12);border:1px solid #3b82f6;border-radius:9px;padding:8px 12px;margin-bottom:8px;font-size:13px}
+.routeBanner button{background:var(--navy);border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+.mapTip{font-size:12px;color:var(--muted);margin:0 0 8px;text-align:center}

@@ -3,6 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import { carMarkerSvg, carColor } from "../lib/carMarker";
+import { fetchRoute, type Coord } from "../lib/routing";
 
 interface CaptainPin {
   id: string; full_name: string;
@@ -24,6 +25,44 @@ export default function AdminMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
   const [count, setCount] = useState(0);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+
+  // رسم مسار رحلة كابتن معيّن عند الضغط عليه
+  const showRoute = useCallback(async (captainId: string, name: string) => {
+    const map = mapRef.current; if (!map) return;
+    const { data } = await supabase.rpc("admin_captain_route", { p_captain_id: captainId });
+    if (!data) { setSelectedName(name + " — لا توجد رحلة جارية"); clearRoute(); return; }
+
+    setSelectedName(name);
+    const beforeStart = data.status === "accepted" || data.status === "arrived";
+    const from: Coord = [data.pickup.lng, data.pickup.lat];
+    const to: Coord = [data.dropoff.lng, data.dropoff.lat];
+    const cap: Coord | null = data.captain ? [data.captain.lng, data.captain.lat] : null;
+
+    // قبل البدء: من الكابتن لنقطة العميل. بعده: من الانطلاق للوجهة
+    const a = beforeStart && cap ? cap : from;
+    const b = beforeStart ? from : to;
+    const coords = await fetchRoute(a, b);
+
+    const geo = { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
+    const src = map.getSource("adminRoute") as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(geo);
+    else {
+      map.addSource("adminRoute", { type: "geojson", data: geo });
+      map.addLayer({ id: "adminRoute", type: "line", source: "adminRoute",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#3b82f6", "line-width": 5, "line-opacity": 0.85 } });
+    }
+    const bounds = new maplibregl.LngLatBounds();
+    coords.forEach((c) => bounds.extend(c as [number, number]));
+    map.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 500 });
+  }, []);
+
+  const clearRoute = useCallback(() => {
+    const map = mapRef.current; if (!map) return;
+    if (map.getLayer("adminRoute")) map.removeLayer("adminRoute");
+    if (map.getSource("adminRoute")) map.removeSource("adminRoute");
+  }, []);
 
   const render = useCallback((caps: CaptainPin[]) => {
     const map = mapRef.current;
@@ -39,6 +78,8 @@ export default function AdminMap() {
         const el = document.createElement("div");
         el.className = "carMarker";
         el.innerHTML = `<img class="carImg" src="${carMarkerSvg(color)}" width="36" height="36" style="${rot}" alt=""/><b>${c.full_name || ""}</b>`;
+        el.style.cursor = "pointer";
+        el.addEventListener("click", (ev) => { ev.stopPropagation(); showRoute(c.id, c.full_name); });
         m = new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat]).addTo(map);
         markersRef.current[c.id] = m;
       } else {
@@ -51,7 +92,7 @@ export default function AdminMap() {
       if (!seen.has(id)) { markersRef.current[id].remove(); delete markersRef.current[id]; }
     }
     setCount(caps.length);
-  }, []);
+  }, [showRoute]);
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("admin_captains_on_map");
@@ -88,6 +129,13 @@ export default function AdminMap() {
         <span><i style={{ background: "#93a1c0" }} /> ثابت</span>
         <span><i style={{ background: "#3b82f6" }} /> في رحلة</span>
       </div>
+      {selectedName && (
+        <div className="routeBanner">
+          <span>مسار: {selectedName}</span>
+          <button onClick={() => { setSelectedName(null); clearRoute(); }}>مسح المسار</button>
+        </div>
+      )}
+      <p className="mapTip">اضغط على أي كابتن لعرض مسار رحلته الجارية</p>
       <div ref={containerRef} className="adminMapCanvas" />
     </section>
   );
