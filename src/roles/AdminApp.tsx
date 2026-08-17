@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../lib/AuthContext";
 import type { Settings } from "../lib/types";
 import TopBar from "../components/TopBar";
 import AdminCaptains from "./AdminCaptains";
@@ -8,7 +7,6 @@ import AdminOverview from "./AdminOverview";
 import AdminMap from "./AdminMap";
 
 export default function AdminApp() {
-  const { profile } = useAuth();
   const [tab, setTab] = useState<"overview" | "map" | "captains" | "pricing">("overview");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saveMsg, setSaveMsg] = useState("");
@@ -24,18 +22,16 @@ export default function AdminApp() {
   const saveSettings = async () => {
     if (!settings) return;
     setBusy(true); setSaveMsg("");
-    const { error } = await supabase.from("settings").update({
-      price_per_km_in_city: settings.price_per_km_in_city,
-      price_per_km_intercity: settings.price_per_km_intercity,
-      min_fare: settings.min_fare,
-      service_fee_percent: settings.service_fee_percent,
-      dispatch_radius_km: settings.dispatch_radius_km,
-      dispatch_timeout_sec: settings.dispatch_timeout_sec,
-      tracking_interval_sec: settings.tracking_interval_sec,
-      offer_ttl_sec: settings.offer_ttl_sec,
-      updated_by: profile!.id,
-      updated_at: new Date().toISOString(),
-    }).eq("id", true);
+    const { error } = await supabase.rpc("admin_save_settings", {
+      p_price_in_city: settings.price_per_km_in_city,
+      p_price_intercity: settings.price_per_km_intercity,
+      p_min_fare: settings.min_fare,
+      p_service_fee: settings.service_fee_percent,
+      p_dispatch_radius: settings.dispatch_radius_km,
+      p_dispatch_timeout: settings.dispatch_timeout_sec,
+      p_tracking_interval: settings.tracking_interval_sec,
+      p_offer_ttl: settings.offer_ttl_sec,
+    });
     setBusy(false);
     setSaveMsg(error ? "تعذّر الحفظ: " + error.message : "تم حفظ الإعدادات ✓");
   };
