@@ -5,6 +5,9 @@ import TopBar from "../components/TopBar";
 import ActiveTrip from "../components/ActiveTrip";
 import CaptainOffer from "./CaptainOffer";
 import { useLocationTracker } from "../lib/useLocationTracker";
+import MyTrips from "../pages/MyTrips";
+import MyRatings from "../pages/MyRatings";
+import "../listPages.css";
 
 interface PendingTrip {
   trip_id: string;
@@ -23,6 +26,7 @@ interface PendingTrip {
 
 export default function CaptainApp() {
   const { profile } = useAuth();
+  const [tab, setTab] = useState<"home" | "trips" | "ratings">("home");
   const [online, setOnline] = useState(false);
   const [trips, setTrips] = useState<PendingTrip[]>([]);
   const [note, setNote] = useState("");
@@ -155,86 +159,99 @@ export default function CaptainApp() {
     <div className="roleShell" dir="rtl">
       <TopBar title="كابتن بنها — الكابتن" />
       <main className="roleMain">
-        <section className="panel">
-          <div className="onlineRow">
-            <div>
-              <h2>مرحبًا كابتن {profile?.full_name || ""}</h2>
-              <p>{online ? "أنت متصل — تستقبل الطلبات القريبة" : "أنت غير متصل"}</p>
-              {online && locStatus.error && (
-                <p className="locWarn">⚠ {locStatus.error}</p>
-              )}
-              {online && locStatus.ok && (
-                <p className="locOk">📍 موقعك يُحدَّث بنجاح</p>
-              )}
-            </div>
-            <button className={`onlineToggle ${online ? "isOn" : ""}`} onClick={() => toggleOnline(!online)}>
-              <i />{online ? "متصل" : "غير متصل"}
-            </button>
-          </div>
-        </section>
+        <div className="lpTabs">
+          <button className={tab === "home" ? "on" : ""} onClick={() => setTab("home")}>الرئيسية</button>
+          <button className={tab === "trips" ? "on" : ""} onClick={() => setTab("trips")}>رحلاتي</button>
+          <button className={tab === "ratings" ? "on" : ""} onClick={() => setTab("ratings")}>تقييماتي</button>
+        </div>
 
-        {hasOffer && <CaptainOffer onCleared={() => { setHasOffer(false); loadPending(); }} />}
+        {tab === "trips" && <MyTrips isCustomer={false} />}
+        {tab === "ratings" && <MyRatings />}
 
-        {!hasOffer && (
-        <section className="panel">
-          <div className="panelHead">
-            <h2>الطلبات الواردة</h2>
-            <p>{online ? `${trips.length} طلب متاح` : "اتصل لاستقبال الطلبات"}</p>
-          </div>
+        {tab === "home" && (
+          <>
+            <section className="panel">
+              <div className="onlineRow">
+                <div>
+                  <h2>مرحبًا كابتن {profile?.full_name || ""}</h2>
+                  <p>{online ? "أنت متصل — تستقبل الطلبات القريبة" : "أنت غير متصل"}</p>
+                  {online && locStatus.error && (
+                    <p className="locWarn">⚠ {locStatus.error}</p>
+                  )}
+                  {online && locStatus.ok && (
+                    <p className="locOk">📍 موقعك يُحدَّث بنجاح</p>
+                  )}
+                </div>
+                <button className={`onlineToggle ${online ? "isOn" : ""}`} onClick={() => toggleOnline(!online)}>
+                  <i />{online ? "متصل" : "غير متصل"}
+                </button>
+              </div>
+            </section>
 
-          {note && <p className="okMsg">{note}</p>}
-          {online && trips.length === 0 && <p className="emptyState">لا توجد طلبات حاليًا — سنُعلمك فور وصول طلب</p>}
+            {hasOffer && <CaptainOffer onCleared={() => { setHasOffer(false); loadPending(); }} />}
 
-          <div className="reqList">
-            {trips.map((t) => (
-              <article className="reqCard" key={t.trip_id}>
-                <div className="reqCustomer">
-                  <div className="custAvatar">
-                    {t.customer_avatar
-                      ? <img src={t.customer_avatar} alt="" />
-                      : <span>{(t.customer_name || "؟").trim().charAt(0)}</span>}
-                  </div>
-                  <div className="custInfo">
-                    <b className="custName">{t.customer_name || "عميل"}</b>
-                    <div className="custStats">
-                      <span className="stStar">★ {Number(t.customer_rating).toFixed(1)}</span>
-                      <span className="stDot">·</span>
-                      <span>{t.customer_trips_count} رحلة</span>
-                    </div>
-                  </div>
-                  <div className="custPrice">
-                    <b>{Number(t.price).toFixed(2)}</b>
-                    <span>ج.م · نقداً</span>
-                  </div>
+            {!hasOffer && (
+              <section className="panel">
+                <div className="panelHead">
+                  <h2>الطلبات الواردة</h2>
+                  <p>{online ? `${trips.length} طلب متاح` : "اتصل لاستقبال الطلبات"}</p>
                 </div>
 
-                <div className="reqRoute">
-                  <div className="rSeg"><i className="dotFrom" /><span>{t.pickup_address}</span></div>
-                  <div className="rSeg"><i className="dotTo" /><span>{t.dropoff_address}</span></div>
-                </div>
+                {note && <p className="okMsg">{note}</p>}
+                {online && trips.length === 0 && <p className="emptyState">لا توجد طلبات حاليًا — سنُعلمك فور وصول طلب</p>}
 
-                <div className="reqFoot">
-                  <span className="chip">{t.distance_km} كم</span>
-                  <span className="chip">{t.kind === "intercity" ? "بين المدن" : "داخل المدينة"}</span>
-                </div>
+                <div className="reqList">
+                  {trips.map((t) => (
+                    <article className="reqCard" key={t.trip_id}>
+                      <div className="reqCustomer">
+                        <div className="custAvatar">
+                          {t.customer_avatar
+                            ? <img src={t.customer_avatar} alt="" />
+                            : <span>{(t.customer_name || "؟").trim().charAt(0)}</span>}
+                        </div>
+                        <div className="custInfo">
+                          <b className="custName">{t.customer_name || "عميل"}</b>
+                          <div className="custStats">
+                            <span className="stStar">★ {Number(t.customer_rating).toFixed(1)}</span>
+                            <span className="stDot">·</span>
+                            <span>{t.customer_trips_count} رحلة</span>
+                          </div>
+                        </div>
+                        <div className="custPrice">
+                          <b>{Number(t.price).toFixed(2)}</b>
+                          <span>ج.م · نقداً</span>
+                        </div>
+                      </div>
 
-                <div className="offerBtns">
-                  <button className="offerMain" onClick={() => submitOffer(t.trip_id, Number(t.price))}>
-                    اعرض بالسعر {Number(t.price).toFixed(0)} ج
-                  </button>
-                  <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 5)}>+5</button>
-                  <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 10)}>+10</button>
-                  <button className="offerManual" onClick={() => {
-                    const v = prompt(`أدخل السعر المقترح (السعر الافتراضي ${Number(t.price).toFixed(0)} ج):`);
-                    const p = v ? parseFloat(v) : NaN;
-                    if (!p || p <= 0) return;
-                    submitOffer(t.trip_id, p);
-                  }}>✎</button>
+                      <div className="reqRoute">
+                        <div className="rSeg"><i className="dotFrom" /><span>{t.pickup_address}</span></div>
+                        <div className="rSeg"><i className="dotTo" /><span>{t.dropoff_address}</span></div>
+                      </div>
+
+                      <div className="reqFoot">
+                        <span className="chip">{t.distance_km} كم</span>
+                        <span className="chip">{t.kind === "intercity" ? "بين المدن" : "داخل المدينة"}</span>
+                      </div>
+
+                      <div className="offerBtns">
+                        <button className="offerMain" onClick={() => submitOffer(t.trip_id, Number(t.price))}>
+                          اعرض بالسعر {Number(t.price).toFixed(0)} ج
+                        </button>
+                        <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 5)}>+5</button>
+                        <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 10)}>+10</button>
+                        <button className="offerManual" onClick={() => {
+                          const v = prompt(`أدخل السعر المقترح (السعر الافتراضي ${Number(t.price).toFixed(0)} ج):`);
+                          const p = v ? parseFloat(v) : NaN;
+                          if (!p || p <= 0) return;
+                          submitOffer(t.trip_id, p);
+                        }}>✎</button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
+              </section>
+            )}
+          </>
         )}
       </main>
     </div>

@@ -5,9 +5,10 @@ import TopBar from "../components/TopBar";
 import AdminCaptains from "./AdminCaptains";
 import AdminOverview from "./AdminOverview";
 import AdminMap from "./AdminMap";
+import AdminRatings from "./AdminRatings";
 
 export default function AdminApp() {
-  const [tab, setTab] = useState<"overview" | "map" | "captains" | "pricing">("overview");
+  const [tab, setTab] = useState<"overview" | "map" | "captains" | "ratings" | "pricing">("overview");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saveMsg, setSaveMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,11 +48,13 @@ export default function AdminApp() {
           <button className={tab === "overview" ? "on" : ""} onClick={() => setTab("overview")}>نظرة عامة</button>
           <button className={tab === "map" ? "on" : ""} onClick={() => setTab("map")}>الخريطة</button>
           <button className={tab === "captains" ? "on" : ""} onClick={() => setTab("captains")}>الكباتن</button>
+          <button className={tab === "ratings" ? "on" : ""} onClick={() => setTab("ratings")}>التقييمات</button>
           <button className={tab === "pricing" ? "on" : ""} onClick={() => setTab("pricing")}>إعدادات التسعير والنطاق</button>
         </div>
 
         {tab === "overview" && <AdminOverview />}
         {tab === "map" && <AdminMap />}
+        {tab === "ratings" && <AdminRatings />}
 
         {tab === "captains" && <AdminCaptains />}
 

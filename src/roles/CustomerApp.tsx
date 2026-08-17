@@ -7,9 +7,13 @@ import TopBar from "../components/TopBar";
 import MapPicker from "../components/MapPicker";
 import ActiveTrip from "../components/ActiveTrip";
 import CustomerOffers from "./CustomerOffers";
+import MyTrips from "../pages/MyTrips";
+import MyRatings from "../pages/MyRatings";
+import "../listPages.css";
 
 export default function CustomerApp() {
   const { profile } = useAuth();
+  const [tab, setTab] = useState<"home" | "trips" | "ratings">("home");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [activeTrip, setActiveTrip] = useState<{ id: string; status: string } | null>(null);
 
@@ -83,58 +87,76 @@ export default function CustomerApp() {
     checkActive();
   };
 
-  const body = (
+  // اختيار رحلة مفضلة — يعبّي نقاط الانطلاق والوجهة ويرجع للرئيسية
+  const pickFavorite = (t: { pickup: LatLng; pickupAddr: string; dropoff: LatLng; dropoffAddr: string }) => {
+    setPickup(t.pickup); setPickupAddr(t.pickupAddr);
+    setDropoff(t.dropoff); setDropoffAddr(t.dropoffAddr);
+    setTab("home");
+  };
+
+  return (
     <div className="roleShell" dir="rtl">
       <TopBar title="كابتن بنها — العميل" />
       <main className="roleMain">
-        {activeTrip && activeTrip.status === "pending" ? (
-          <CustomerOffers tripId={activeTrip.id}
-            onAccepted={() => checkActive()}
-            onCancel={() => { setActiveTrip(null); checkActive(); }} />
-        ) : activeTrip ? (
-          <ActiveTrip onDone={() => { setActiveTrip(null); checkActive(); }} />
-        ) : (
-        <section className="panel">
-          <div className="panelHead">
-            <h2>اطلب رحلة</h2>
-            <p>أهلاً {profile?.full_name || ""}، حدّد وجهتك وسنبحث لك عن أقرب كابتن</p>
-          </div>
+        <div className="lpTabs">
+          <button className={tab === "home" ? "on" : ""} onClick={() => setTab("home")}>الرئيسية</button>
+          <button className={tab === "trips" ? "on" : ""} onClick={() => setTab("trips")}>رحلاتي</button>
+          <button className={tab === "ratings" ? "on" : ""} onClick={() => setTab("ratings")}>تقييماتي</button>
+        </div>
 
-          <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
-            onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
-          <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
-            onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />
+        {tab === "trips" && <MyTrips isCustomer onPickFavorite={pickFavorite} />}
+        {tab === "ratings" && <MyRatings />}
 
-          <div className="field">
-            <label>نوع الرحلة</label>
-            <div className="segmented">
-              <button className={kind === "in_city" ? "on" : ""} onClick={() => setKind("in_city")} type="button">داخل المدينة</button>
-              <button className={kind === "intercity" ? "on" : ""} onClick={() => setKind("intercity")} type="button">بين المدن</button>
-            </div>
-          </div>
+        {tab === "home" && (
+          <>
+            {activeTrip && activeTrip.status === "pending" ? (
+              <CustomerOffers tripId={activeTrip.id}
+                onAccepted={() => checkActive()}
+                onCancel={() => { setActiveTrip(null); checkActive(); }} />
+            ) : activeTrip ? (
+              <ActiveTrip onDone={() => { setActiveTrip(null); checkActive(); }} />
+            ) : (
+              <section className="panel">
+                <div className="panelHead">
+                  <h2>اطلب رحلة</h2>
+                  <p>أهلاً {profile?.full_name || ""}، حدّد وجهتك وسنبحث لك عن أقرب كابتن</p>
+                </div>
 
-          <div className="fareBox">
-            <div>
-              <span>المسافة</span>
-              <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <span>السعر المقترح</span>
-              <b>{fare != null ? `${fare.toFixed(2)} ج.م` : "—"}</b>
-            </div>
-          </div>
+                <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
+                  onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
+                <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
+                  onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />
 
-          {err && <p className="authError" role="alert">{err}</p>}
-          {msg && <p className="okMsg" role="status">{msg}</p>}
+                <div className="field">
+                  <label>نوع الرحلة</label>
+                  <div className="segmented">
+                    <button className={kind === "in_city" ? "on" : ""} onClick={() => setKind("in_city")} type="button">داخل المدينة</button>
+                    <button className={kind === "intercity" ? "on" : ""} onClick={() => setKind("intercity")} type="button">بين المدن</button>
+                  </div>
+                </div>
 
-          <button className="cta" onClick={requestTrip} disabled={busy}>
-            {busy ? "جارٍ الإرسال..." : "اطلب رحلة"}
-          </button>
-        </section>
+                <div className="fareBox">
+                  <div>
+                    <span>المسافة</span>
+                    <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
+                  </div>
+                  <div style={{ textAlign: "left" }}>
+                    <span>السعر المقترح</span>
+                    <b>{fare != null ? `${fare.toFixed(2)} ج.م` : "—"}</b>
+                  </div>
+                </div>
+
+                {err && <p className="authError" role="alert">{err}</p>}
+                {msg && <p className="okMsg" role="status">{msg}</p>}
+
+                <button className="cta" onClick={requestTrip} disabled={busy}>
+                  {busy ? "جارٍ الإرسال..." : "اطلب رحلة"}
+                </button>
+              </section>
+            )}
+          </>
         )}
       </main>
     </div>
   );
-
-  return body;
 }
