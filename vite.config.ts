@@ -1,4 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { copyFileSync, mkdirSync } from "node:fs";
+import { createRequire } from "node:module";
 
-export default defineConfig({ plugins: [react()], build: { outDir: "dist/client", emptyOutDir: true } });
+// MapLibre v6 يحمّل ملف الـ worker وقت التشغيل من مسار مجاور للحزمة (/assets/maplibre-gl-worker.mjs)
+// وVite لا ينسخه تلقائيًا — هذه الإضافة تنسخه مع ملف shared الذي يستورده بعد كل بناء
+function maplibreWorkerAssets(): Plugin {
+  return {
+    name: "maplibre-worker-assets",
+    apply: "build",
+    closeBundle() {
+      const require = createRequire(import.meta.url);
+      mkdirSync("dist/client/assets", { recursive: true });
+      for (const f of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
+        copyFileSync(require.resolve(`maplibre-gl/dist/${f}`), `dist/client/assets/${f}`);
+      }
+    },
+  };
+}
+
+export default defineConfig({ plugins: [react(), maplibreWorkerAssets()], build: { outDir: "dist/client", emptyOutDir: true } });
