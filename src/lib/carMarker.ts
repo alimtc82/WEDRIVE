@@ -1,10 +1,23 @@
-// أيقونة سيارة موحّدة (SVG) — تتلوّن حسب الحالة وتدور حسب الاتجاه
+// أيقونة سيارة موحّدة (SVG) — منظر علوي + أسهم اتجاه، تتلوّن حسب الحالة وتدور حسب heading
+// المقدمة لأعلى (شمال) — تدوير CSS heading (azimuth: 0=شمال، عقارب الساعة) يتوافق معها مباشرة
 export function carMarkerSvg(color: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="11" fill="white" stroke="${color}" stroke-width="1.5"/>
-    <path fill="${color}" d="M12 3l3 5h-6z" opacity="0.9"/>
-    <path fill="${color}" d="M7 12.5l.9-2.7c.1-.3.4-.5.7-.5h6.8c.3 0 .6.2.7.5l.9 2.7.5.3c.3.1.5.4.5.8v2c0 .2-.2.4-.4.4H16c0 .6-.5 1-1 1s-1-.4-1-1h-4c0 .6-.5 1-1 1s-1-.4-1-1h-1.1c-.2 0-.4-.2-.4-.4v-2c0-.4.2-.7.5-.8zm1.1-.5h7.8l-.6-1.8H8.7z"/>
-  </svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48">
+  <circle cx="24" cy="24" r="22" fill="white" stroke="${color}" stroke-width="2"/>
+  <!-- أسهم الاتجاه أمام المقدمة -->
+  <path d="M16.5 14.5 L24 8.5 L31.5 14.5" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+  <path d="M18.5 18 L24 13.5 L29.5 18" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+  <!-- جسم السيارة (منظر علوي) -->
+  <rect x="17" y="20" width="14" height="23" rx="4.5" fill="${color}"/>
+  <!-- الزجاج الأمامي: منحرف عريض يدل على الأمام -->
+  <path d="M19.2 24 L28.8 24 L27.4 27.6 L20.6 27.6 Z" fill="white"/>
+  <!-- الزجاج الخلفي: أصغر -->
+  <path d="M20.2 36 L27.8 36 L27 39.2 L21 39.2 Z" fill="white" opacity="0.8"/>
+  <!-- العجلات -->
+  <rect x="15.1" y="24.2" width="2.4" height="4.6" rx="1.1" fill="#1e293b"/>
+  <rect x="30.5" y="24.2" width="2.4" height="4.6" rx="1.1" fill="#1e293b"/>
+  <rect x="15.1" y="34.4" width="2.4" height="4.6" rx="1.1" fill="#1e293b"/>
+  <rect x="30.5" y="34.4" width="2.4" height="4.6" rx="1.1" fill="#1e293b"/>
+</svg>`;
   return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
 }
 
@@ -22,6 +35,8 @@ export function makeCarElement(color: string, heading: number | null, label?: st
   const rot = heading != null ? `transform:rotate(${heading}deg)` : "";
   el.innerHTML =
     `<img class="carImg" src="${carMarkerSvg(color)}" width="36" height="36" style="${rot}" alt=""/>` +
-    (label ? `<b>${label}</b>` : "");
+    (label ? `<b></b>` : "");
+  const b = el.querySelector("b");
+  if (b && label) b.textContent = label;
   return el;
 }
