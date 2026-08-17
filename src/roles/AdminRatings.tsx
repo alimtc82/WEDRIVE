@@ -1,0 +1,68 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "../lib/supabase";
+import { FiltersBar, Pagination, initialFilters, rangeOf, fmtDateTime, type FiltersState } from "../components/ListFilters";
+import "../listPages.css";
+
+interface AdminRatingRow {
+  stars: number; comment: string | null; created_at: string; kind: string;
+  rater_name: string | null; ratee_name: string | null;
+}
+
+function starsLine(n: number) { return "★".repeat(n) + "☆".repeat(5 - n); }
+
+export default function AdminRatings() {
+  const [f, setF] = useState<FiltersState>(initialFilters());
+  const [rows, setRows] = useState<AdminRatingRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [avg, setAvg] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { from, to } = rangeOf(f);
+    const { data } = await supabase.rpc("admin_ratings_list", {
+      p_from: from, p_to: to, p_kind: f.kind || null,
+      p_limit: f.pageSize, p_offset: f.page * f.pageSize,
+    });
+    if (data) { setRows(data.rows || []); setTotal(data.total || 0); setAvg(Number(data.avg) || 0); }
+    setLoading(false);
+  }, [f]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <section className="panel">
+      <div className="panelHead">
+        <h2>التقييمات</h2>
+        <p>كل تقييمات الرحلات — التقييمات المنخفضة (أقل من 3) مظللة بالأحمر</p>
+      </div>
+
+      <div className="rateSummary">
+        <span className="big">{avg.toFixed(1)}</span>
+        <div>
+          <div className="starsLine">{starsLine(Math.round(avg))}</div>
+          <small>{total} تقييم في الفترة المحددة</small>
+        </div>
+      </div>
+
+      <FiltersBar f={f} onChange={setF} />
+      {loading && <p className="emptyState">جارٍ التحميل...</p>}
+      {!loading && rows.length === 0 && <p className="emptyState">لا توجد تقييمات في هذه الفترة</p>}
+
+      {!loading && rows.map((r, i) => (
+        <div className={`lpRow rateRow ${r.stars < 3 ? "low" : ""}`} key={i}>
+          <div className="lpRowTop">
+            <span className="rateStars">{starsLine(r.stars)}</span>
+            <span className="lpBadge kind">{r.kind === "intercity" ? "خارج المدينة" : "داخل المدينة"}</span>
+            <span className="lpDate">{fmtDateTime(r.created_at)}</span>
+          </div>
+          <div className="rateWho">من <b>{r.rater_name || "—"}</b> إلى <b>{r.ratee_name || "—"}</b></div>
+          {r.comment && <div className="rateComment">{r.comment}</div>}
+        </div>
+      ))}
+
+      <Pagination total={total} pageSize={f.pageSize} page={f.page}
+        onPage={(p) => setF({ ...f, page: p })} />
+    </section>
+  );
+}
