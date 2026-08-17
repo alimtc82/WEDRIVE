@@ -41,6 +41,7 @@ export default function AdminMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+  const meMarkerRef = useRef<maplibregl.Marker | null>(null);
   const routeCache = useRef<Record<string, Coord[]>>({});
   const anchors = useRef<Record<string, Coord>>({});
   const selectedRef = useRef<{ id: string; name: string } | null>(null);
@@ -158,6 +159,18 @@ export default function AdminMap() {
     if (data) render(data as CaptainPin[]);
   }, [render]);
 
+  // نقطة موقع الأدمن الحالي على الخريطة (تُحدَّث مع حركته)
+  const showMe = useCallback((lat: number, lng: number) => {
+    const map = mapRef.current; if (!map) return;
+    if (!meMarkerRef.current) {
+      const el = document.createElement("div");
+      el.style.cssText = "width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.25);";
+      meMarkerRef.current = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+    } else {
+      meMarkerRef.current.setLngLat([lng, lat]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
@@ -167,6 +180,24 @@ export default function AdminMap() {
     mapRef.current = map;
     map.on("load", () => { map.resize(); load(); });
     setTimeout(() => map.resize(), 300);
+
+    // تحديد موقع الأدمن الحالي تلقائيًا بمجرد فتح الخريطة
+    let watchId: number | null = null;
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (p) => {
+          showMe(p.coords.latitude, p.coords.longitude);
+          map.jumpTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 13 });
+        },
+        () => { /* لو رفض الإذن تبقى الخريطة على العرض الافتراضي */ },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+      watchId = navigator.geolocation.watchPosition(
+        (p) => showMe(p.coords.latitude, p.coords.longitude),
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 30000 }
+      );
+    }
 
     // تحديث دوري كل 15 ثانية + realtime — مع تحديث المسار المعروض إن وُجد
     const tick = () => {
@@ -179,8 +210,14 @@ export default function AdminMap() {
       .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, tick)
       .subscribe();
 
-    return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markersRef.current = {}; };
-  }, [load, showRoute]);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(ch);
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      meMarkerRef.current?.remove(); meMarkerRef.current = null;
+      map.remove(); mapRef.current = null; markersRef.current = {};
+    };
+  }, [load, showRoute, showMe]);
 
   return (
     <section className="panel">
@@ -189,6 +226,7 @@ export default function AdminMap() {
         <p>{count} كابتن متصل الآن · تتحدّث تلقائيًا</p>
       </div>
       <div className="mapLegend">
+        <span><i style={{ background: "#3b82f6", border: "2px solid #fff" }} /> موقعي</span>
         <span><i style={{ background: "#1fbf8f" }} /> متحرك</span>
         <span><i style={{ background: "#93a1c0" }} /> ثابت</span>
         <span><i style={{ background: "#3b82f6" }} /> في رحلة</span>
