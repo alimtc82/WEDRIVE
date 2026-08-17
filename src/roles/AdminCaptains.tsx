@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { signedDocUrl, deleteCaptainDocs } from "../lib/captainDocs";
 
@@ -64,7 +64,7 @@ export default function AdminCaptains() {
     <section className="panel">
       <div className="panelHead">
         <h2>إدارة الكباتن</h2>
-        <p>راجع مستندات الكباتن ووافق أو ارفض</p>
+        <p>راجع مستندات الكباتن ووافق أو ارفض — اضغط على أي صورة لفتحها، واسحب يمينًا/يسارًا للتنقل</p>
       </div>
 
       <div className="capFilter">
@@ -149,6 +149,7 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
           })}
         </div>
 
+        {docs.length === 0 && <p className="emptyState">لا توجد مستندات مرفوعة لهذا الكابتن</p>}
         <div className="docsGrid">
           {docs.map((d, i) => <DocThumb key={i} label={d.label} path={d.path} onOpen={() => setLightbox(i)} />)}
         </div>
@@ -194,6 +195,7 @@ function DocLightbox({ docs, index, onIndex, onClose }: {
   onClose: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const touchX = useRef<number | null>(null);
 
   useEffect(() => {
     setUrl(null);
@@ -214,17 +216,28 @@ function DocLightbox({ docs, index, onIndex, onClose }: {
     return () => window.removeEventListener("keydown", h);
   });
 
+  // تنقّل بالسحب يمينًا ويسارًا (لمس)
+  const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) next(); else prev();
+  };
+
   return (
     <div className="lbWrap" onClick={onClose}>
       <button className="lbClose" onClick={onClose} aria-label="خروج">✕</button>
 
       <button className="lbNav lbPrev" onClick={(e) => { e.stopPropagation(); prev(); }} aria-label="السابق">‹</button>
 
-      <div className="lbBody" onClick={(e) => e.stopPropagation()}>
+      <div className="lbBody" onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {url
-          ? <img src={url} alt={docs[index].label} className="lbImg" />
+          ? <img src={url} alt={docs[index].label} className="lbImg" draggable={false} />
           : <div className="lbLoading">جارٍ التحميل...</div>}
-        <div className="lbCaption">{docs[index].label} · {index + 1} / {docs.length}</div>
+        <div className="lbCaption">{docs[index].label} · {index + 1} / {docs.length} — اسحب للتنقل</div>
       </div>
 
       <button className="lbNav lbNext" onClick={(e) => { e.stopPropagation(); next(); }} aria-label="التالي">›</button>
