@@ -1,0 +1,6 @@
+{
+  "appId": "online.mtcgroup.captainbanha",
+  "appName": "كابتن بنها",
+  "webDir": "dist/client",
+  "bundledWebRuntime": false
+}

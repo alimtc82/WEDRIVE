@@ -19,4 +19,9 @@ function maplibreWorkerAssets(): Plugin {
   };
 }
 
-export default defineConfig({ plugins: [react(), maplibreWorkerAssets()], build: { outDir: "dist/client", emptyOutDir: true } });
+// base نسبي — جاهزية للتغليف لاحقًا عبر Capacitor (Android/iOS) أو Electron (Desktop)
+export default defineConfig({
+  base: "./",
+  plugins: [react(), maplibreWorkerAssets()],
+  build: { outDir: "dist/client", emptyOutDir: true },
+});

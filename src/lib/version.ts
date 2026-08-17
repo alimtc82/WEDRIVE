@@ -1,2 +1,2 @@
 // رقم إصدار التطبيق — يُحدّث هنا ويظهر في الواجهة
-export const APP_VERSION = "1.8.3";
+export const APP_VERSION = "1.9.0";

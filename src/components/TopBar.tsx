@@ -1,4 +1,5 @@
 import { useAuth } from "../lib/AuthContext";
+import { BrandMark } from "../lib/brand";
 
 const roleLabel: Record<string, string> = {
   customer: "عميل",
@@ -13,7 +14,7 @@ export default function TopBar({ title }: { title: string }) {
   return (
     <header className="topbar">
       <div className="topbarBrand">
-        <span className="brandMark sm">WE</span>
+        <BrandMark size={30} />
         <b>{title}</b>
       </div>
       <div className="topbarUser">

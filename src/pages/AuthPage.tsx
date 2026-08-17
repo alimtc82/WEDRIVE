@@ -1,28 +1,30 @@
 import React, { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
-import type { UserRole } from "../lib/types";
 import { APP_VERSION } from "../lib/version";
+import { BrandMark } from "../lib/brand";
 import CaptainRegister from "./CaptainRegister";
+import "../authV2.css";
 
-type Mode = "signin" | "signup";
+type Screen = "welcome" | "signin" | "signup";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
+  const [screen, setScreen] = useState<Screen>("welcome");
   const [captainReg, setCaptainReg] = useState(false);
   const [captainDone, setCaptainDone] = useState(false);
-  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<UserRole>("customer");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // شاشة تسجيل الكابتن الكاملة
+  // شاشة تسجيل الكابتن الكاملة (بدون تغيير)
   if (captainReg) {
-    return <CaptainRegister onBack={() => setCaptainReg(false)} onDone={() => { setCaptainReg(false); setCaptainDone(true); setMode("signin"); }} />;
+    return <CaptainRegister onBack={() => setCaptainReg(false)} onDone={() => { setCaptainReg(false); setCaptainDone(true); setScreen("signin"); }} />;
   }
+
+  const go = (s: Screen) => { setScreen(s); setError(""); };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +34,18 @@ export default function AuthPage() {
       setError("من فضلك أدخل البريد وكلمة المرور");
       return;
     }
-    if (mode === "signup" && !fullName.trim()) {
+    if (screen === "signup" && !fullName.trim()) {
       setError("من فضلك أدخل الاسم بالكامل");
       return;
     }
 
     setBusy(true);
     try {
-      if (mode === "signin") {
+      if (screen === "signin") {
         await signIn(email.trim(), password);
       } else {
-        await signUp({ email: email.trim(), password, fullName: fullName.trim(), phone: phone.trim(), role });
+        // إنشاء حساب العميل — الكابتن له مسار تسجيل مستقل بالمستندات
+        await signUp({ email: email.trim(), password, fullName: fullName.trim(), phone: phone.trim(), role: "customer" });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
@@ -52,65 +55,102 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="authWrap" dir="rtl">
-      <div className="authCard">
-        <div className="authBrand">
-          <span className="brandMark">WE</span>
-          <div>
-            <b>WE DRIVE</b>
-            <small>لوحة إدارة المشاوير</small>
-          </div>
-        </div>
+    <div className="avWrap" dir="rtl">
+      <div className="avGlow g1" /><div className="avGlow g2" />
+      <div className="avInner">
 
-        {captainDone && (
-          <p className="okMsg">تم رفع صور المستندات واستلام طلبك بنجاح ✓ حسابك الآن قيد المراجعة من الإدارة، وسيتم تفعيله بعد الموافقة.</p>
-        )}
-        <div className="authTabs">
-          <button className={mode === "signin" ? "on" : ""} onClick={() => { setMode("signin"); setError(""); }} type="button">
-            تسجيل الدخول
-          </button>
-          <button className={mode === "signup" ? "on" : ""} onClick={() => { setMode("signup"); setError(""); }} type="button">
-            حساب جديد
-          </button>
-        </div>
-
-        <form onSubmit={submit} className="authForm">
-          {mode === "signup" && (
-            <>
-              <label>الاسم بالكامل
-                <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="أحمد حسن" />
-              </label>
-              <label>رقم الموبايل
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01xxxxxxxxx" inputMode="tel" />
-              </label>
-              <div className="rolePick">
-                <span>أنا</span>
-                <button type="button" className={role === "customer" ? "on" : ""} onClick={() => setRole("customer")}>عميل</button>
-                <button type="button" className={role === "captain" ? "on" : ""} onClick={() => setCaptainReg(true)}>كابتن</button>
+        {screen === "welcome" ? (
+          <>
+            {/* الهيرو */}
+            <div className="avHero">
+              <BrandMark size={68} />
+              <h1 className="avName">كابتن <span>بنها</span></h1>
+              <p className="avTag">مشوارك داخل بنها على بُعد ضغطة</p>
+              <div className="avChips">
+                <span>📍 تتبع حي</span>
+                <span>🤝 سعر تفاوضي</span>
+                <span>🛡 كباتن موثقون</span>
               </div>
-            </>
-          )}
+              <svg className="avRoute" viewBox="0 0 250 56" fill="none" aria-hidden="true">
+                <path d="M14 46 C 70 46, 82 10, 140 12 S 220 34, 238 16" stroke="#1fbf8f" strokeWidth="2.5" strokeDasharray="7 7" strokeLinecap="round" opacity=".8" />
+                <circle cx="14" cy="46" r="6" fill="#1fbf8f" />
+                <circle cx="238" cy="16" r="6" fill="#3b82f6" />
+              </svg>
+            </div>
 
-          <label>البريد الإلكتروني
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="name@example.com" autoComplete="email" />
-          </label>
-          <label>كلمة المرور
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
-          </label>
+            {/* شيت اختيار الدور */}
+            <div className="avSheet">
+              <div className="avGrab" />
+              {captainDone && (
+                <p className="okMsg">تم رفع صور المستندات واستلام طلبك بنجاح ✓ حسابك الآن قيد المراجعة من الإدارة، وسيتم تفعيله بعد الموافقة.</p>
+              )}
+              <button type="button" className="avRole customer" onClick={() => go("signup")}>
+                <span className="avRoleIc">🧍</span>
+                <span className="avRoleTxt"><b>أنا عميل</b><small>اطلب مشوارك وحدد سعرك</small></span>
+                <i className="avChev">‹</i>
+              </button>
+              <button type="button" className="avRole captain" onClick={() => setCaptainReg(true)}>
+                <span className="avRoleIc">🚗</span>
+                <span className="avRoleTxt"><b>أنا كابتن</b><small>استقبل الطلبات واكسب معنا</small></span>
+                <i className="avChev">‹</i>
+              </button>
+              <p className="avSwitch">عندك حساب بالفعل؟ <button type="button" onClick={() => go("signin")}>سجّل الدخول</button></p>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* شاشة الدخول / إنشاء حساب عميل */}
+            <div className="avFormHead">
+              <button type="button" className="avBack" onClick={() => go("welcome")} aria-label="رجوع">→</button>
+              <div>
+                <h2>{screen === "signin" ? "تسجيل الدخول" : "حساب عميل جديد"}</h2>
+                <p>{screen === "signin" ? "أهلًا بعودتك إلى كابتن بنها" : "خطوة واحدة وتبدأ تطلب مشاويرك"}</p>
+              </div>
+            </div>
 
-          {error && <p className="authError" role="alert">{error}</p>}
+            <div className="avSheet">
+              <div className="avBrandMini"><BrandMark size={30} /><b>كابتن بنها</b></div>
+              {captainDone && (
+                <p className="okMsg">تم استلام طلب الكابتن بنجاح ✓ حسابك قيد المراجعة وسيُفعَّل بعد الموافقة.</p>
+              )}
+              <form onSubmit={submit}>
+                {screen === "signup" && (
+                  <>
+                    <div className="avField">
+                      <i>👤</i>
+                      <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="الاسم بالكامل" autoComplete="name" />
+                    </div>
+                    <div className="avField">
+                      <i>📱</i>
+                      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الموبايل 01xxxxxxxxx" inputMode="tel" autoComplete="tel" />
+                    </div>
+                  </>
+                )}
+                <div className="avField">
+                  <i>✉️</i>
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="البريد الإلكتروني" autoComplete="email" />
+                </div>
+                <div className="avField">
+                  <i>🔒</i>
+                  <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="كلمة المرور" autoComplete={screen === "signin" ? "current-password" : "new-password"} />
+                </div>
 
-          <button className="authSubmit" type="submit" disabled={busy}>
-            {busy ? "جارٍ..." : mode === "signin" ? "دخول" : "إنشاء الحساب"}
-          </button>
-        </form>
+                {error && <p className="authError" role="alert">{error}</p>}
 
-        <p className="authNote">
-          {mode === "signin" ? "ليس لديك حساب؟" : "لديك حساب بالفعل؟"}{" "}
-          <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); }}>
-            {mode === "signin" ? "أنشئ حساب" : "سجّل الدخول"}
-          </button>
-        </p>
+                <button className="avSubmit" type="submit" disabled={busy}>
+                  {busy ? "جارٍ..." : screen === "signin" ? "دخول" : "إنشاء الحساب"}
+                </button>
+              </form>
+              <p className="avSwitch">
+                {screen === "signin" ? "ليس لديك حساب؟" : "لديك حساب بالفعل؟"}{" "}
+                <button type="button" onClick={() => go(screen === "signin" ? "signup" : "signin")}>
+                  {screen === "signin" ? "أنشئ حساب" : "سجّل الدخول"}
+                </button>
+              </p>
+            </div>
+          </>
+        )}
+
       </div>
       <p className="verTag">الإصدار {APP_VERSION}</p>
     </div>
