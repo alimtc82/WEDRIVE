@@ -20,49 +20,103 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
+const DONE_COLOR = "#9aa3c0";   // الجزء المقطوع
+const NEXT_COLOR = "#3b82f6";   // الجزء المتبقي
+
+function lineFeature(coords: Coord[]) {
+  return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
+}
+
+function nearestIndex(route: Coord[], pos: Coord): number {
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < route.length; i++) {
+    const dx = route[i][0] - pos[0], dy = route[i][1] - pos[1];
+    const dd = dx * dx + dy * dy;
+    if (dd < bd) { bd = dd; best = i; }
+  }
+  return best;
+}
+
 export default function AdminMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+  const routeCache = useRef<Record<string, Coord[]>>({});
+  const anchors = useRef<Record<string, Coord>>({});
+  const selectedRef = useRef<{ id: string; name: string } | null>(null);
   const [count, setCount] = useState(0);
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
-  // رسم مسار رحلة كابتن معيّن عند الضغط عليه
-  const showRoute = useCallback(async (captainId: string, name: string) => {
+  const setLine = useCallback((id: string, coords: Coord[], color: string, width: number) => {
+    const map = mapRef.current; if (!map) return;
+    const data = coords.length >= 2
+      ? lineFeature(coords)
+      : { type: "FeatureCollection" as const, features: [] };
+    const src = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(data as GeoJSON.GeoJSON);
+    else {
+      map.addSource(id, { type: "geojson", data: data as GeoJSON.GeoJSON });
+      map.addLayer({ id, type: "line", source: id,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": color, "line-width": width, "line-opacity": 0.9 } });
+    }
+  }, []);
+
+  const clearRoute = useCallback(() => {
+    setLine("adminRouteDone", [], DONE_COLOR, 6);
+    setLine("adminRouteNext", [], NEXT_COLOR, 5);
+  }, [setLine]);
+
+  // رسم مسار رحلة كابتن معيّن (مقطوع + متبقٍ) — يُستدعى عند الضغط عليه ويُحدَّث دوريًا
+  const showRoute = useCallback(async (captainId: string, name: string, silent = false) => {
     const map = mapRef.current; if (!map) return;
     const { data } = await supabase.rpc("admin_captain_route", { p_captain_id: captainId });
-    if (!data) { setSelectedName(name + " — لا توجد رحلة جارية"); clearRoute(); return; }
+    if (!data) {
+      if (!silent) { setSelectedName(name + " — لا توجد رحلة جارية"); selectedRef.current = null; clearRoute(); }
+      return;
+    }
 
-    setSelectedName(name);
+    if (!silent) { setSelectedName(name); selectedRef.current = { id: captainId, name }; }
+
     const beforeStart = data.status === "accepted" || data.status === "arrived";
     const from: Coord = [data.pickup.lng, data.pickup.lat];
     const to: Coord = [data.dropoff.lng, data.dropoff.lat];
     const cap: Coord | null = data.captain ? [data.captain.lng, data.captain.lat] : null;
 
-    // قبل البدء: من الكابتن لنقطة العميل. بعده: من الانطلاق للوجهة
-    const a = beforeStart && cap ? cap : from;
-    const b = beforeStart ? from : to;
-    const coords = await fetchRoute(a, b);
+    const phase = beforeStart ? "pickup" : "trip";
+    const cacheKey = `${captainId}:${phase}`;
 
-    const geo = { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
-    const src = map.getSource("adminRoute") as maplibregl.GeoJSONSource | undefined;
-    if (src) src.setData(geo);
-    else {
-      map.addSource("adminRoute", { type: "geojson", data: geo });
-      map.addLayer({ id: "adminRoute", type: "line", source: "adminRoute",
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#3b82f6", "line-width": 5, "line-opacity": 0.85 } });
+    let anchor: Coord, end: Coord;
+    if (beforeStart) {
+      if (!cap) return;
+      if (!anchors.current[cacheKey]) anchors.current[cacheKey] = cap;
+      anchor = anchors.current[cacheKey]; end = from;
+    } else {
+      anchor = from; end = to;
     }
-    const bounds = new maplibregl.LngLatBounds();
-    coords.forEach((c) => bounds.extend(c as [number, number]));
-    map.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 500 });
-  }, []);
 
-  const clearRoute = useCallback(() => {
-    const map = mapRef.current; if (!map) return;
-    if (map.getLayer("adminRoute")) map.removeLayer("adminRoute");
-    if (map.getSource("adminRoute")) map.removeSource("adminRoute");
-  }, []);
+    let route = routeCache.current[cacheKey];
+    if (!route) {
+      route = await fetchRoute(anchor, end);
+      routeCache.current[cacheKey] = route;
+    }
+
+    // تقسيم المسار حسب موقع الكابتن الحالي
+    if (cap && route.length >= 2) {
+      const i = nearestIndex(route, cap);
+      setLine("adminRouteDone", [...route.slice(0, i + 1), cap], DONE_COLOR, 6);
+      setLine("adminRouteNext", [cap, ...route.slice(i + 1)], NEXT_COLOR, 5);
+    } else {
+      setLine("adminRouteDone", [], DONE_COLOR, 6);
+      setLine("adminRouteNext", route, NEXT_COLOR, 5);
+    }
+
+    if (!silent) {
+      const bounds = new maplibregl.LngLatBounds();
+      route.forEach((c) => bounds.extend(c as [number, number]));
+      map.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 500 });
+    }
+  }, [clearRoute, setLine]);
 
   const render = useCallback((caps: CaptainPin[]) => {
     const map = mapRef.current;
@@ -77,7 +131,12 @@ export default function AdminMap() {
       if (!m) {
         const el = document.createElement("div");
         el.className = "carMarker";
-        el.innerHTML = `<img class="carImg" src="${carMarkerSvg(color)}" width="36" height="36" style="${rot}" alt=""/><b>${c.full_name || ""}</b>`;
+        const img = document.createElement("img");
+        img.className = "carImg"; img.src = carMarkerSvg(color); img.width = 36; img.height = 36;
+        if (rot) img.style.cssText = rot;
+        const label = document.createElement("b");
+        label.textContent = c.full_name || "";
+        el.append(img, label);
         el.style.cursor = "pointer";
         el.addEventListener("click", (ev) => { ev.stopPropagation(); showRoute(c.id, c.full_name); });
         m = new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat]).addTo(map);
@@ -109,14 +168,19 @@ export default function AdminMap() {
     map.on("load", () => { map.resize(); load(); });
     setTimeout(() => map.resize(), 300);
 
-    // تحديث دوري كل 15 ثانية + realtime عند أي تغيير
-    const interval = setInterval(load, 15000);
+    // تحديث دوري كل 15 ثانية + realtime — مع تحديث المسار المعروض إن وُجد
+    const tick = () => {
+      load();
+      const s = selectedRef.current;
+      if (s) showRoute(s.id, s.name, true);
+    };
+    const interval = setInterval(tick, 15000);
     const ch = supabase.channel("admin-map")
-      .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, tick)
       .subscribe();
 
     return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markersRef.current = {}; };
-  }, [load]);
+  }, [load, showRoute]);
 
   return (
     <section className="panel">
@@ -132,10 +196,10 @@ export default function AdminMap() {
       {selectedName && (
         <div className="routeBanner">
           <span>مسار: {selectedName}</span>
-          <button onClick={() => { setSelectedName(null); clearRoute(); }}>مسح المسار</button>
+          <button onClick={() => { setSelectedName(null); selectedRef.current = null; clearRoute(); }}>مسح المسار</button>
         </div>
       )}
-      <p className="mapTip">اضغط على أي كابتن لعرض مسار رحلته الجارية</p>
+      <p className="mapTip">اضغط على أي كابتن لعرض مسار رحلته الجارية — الرمادي ما قطعه والأزرق المتبقي</p>
       <div ref={containerRef} className="adminMapCanvas" />
     </section>
   );
