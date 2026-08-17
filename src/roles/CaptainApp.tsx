@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import TopBar from "../components/TopBar";
 import ActiveTrip from "../components/ActiveTrip";
+import CaptainOffer from "./CaptainOffer";
 import { useLocationTracker } from "../lib/useLocationTracker";
 
 interface PendingTrip {
@@ -27,6 +28,26 @@ export default function CaptainApp() {
   const [note, setNote] = useState("");
   const [capStatus, setCapStatus] = useState<string | null>(null);
   const [hasActive, setHasActive] = useState<boolean>(false);
+  const [hasOffer, setHasOffer] = useState<boolean>(false);
+  const [trackInterval, setTrackInterval] = useState<number>(30);
+
+  const checkOffer = useCallback(async () => {
+    const { data } = await supabase.rpc("my_active_offer");
+    setHasOffer(!!data);
+  }, []);
+
+  useEffect(() => {
+    checkOffer();
+    const ch = supabase.channel("cap-offer-check")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trip_offers" }, () => checkOffer())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [checkOffer]);
+
+  useEffect(() => {
+    supabase.from("settings").select("tracking_interval_sec").single()
+      .then(({ data }) => { if (data) setTrackInterval(data.tracking_interval_sec ?? 30); });
+  }, []);
 
   const checkActive = useCallback(async () => {
     const { data } = await supabase.rpc("my_active_trip");
@@ -34,7 +55,7 @@ export default function CaptainApp() {
   }, []);
 
   // تتبّع الموقع طالما الكابتن متصل أو في رحلة
-  const locStatus = useLocationTracker(online || hasActive);
+  const locStatus = useLocationTracker(online || hasActive, trackInterval);
 
   useEffect(() => {
     checkActive();
@@ -73,15 +94,17 @@ export default function CaptainApp() {
     return () => { supabase.removeChannel(channel); };
   }, [online, loadPending]);
 
-  const accept = async (tripId: string) => {
+  const submitOffer = async (tripId: string, price: number) => {
     setNote("");
-    const { error } = await supabase.rpc("accept_trip", { p_trip_id: tripId });
+    const { error } = await supabase.rpc("submit_offer", { p_trip_id: tripId, p_price: price });
     if (error) {
-      setNote("لم يعد الطلب متاحًا — ربما قبله كابتن آخر");
+      setNote(error.message || "تعذّر تقديم العرض");
       loadPending();
       return;
     }
-    setNote("تم قبول الرحلة ✓");
+    setNote("تم تقديم عرضك ✓ في انتظار رد العميل");
+    checkOffer();
+    checkActive();
     loadPending();
   };
 
@@ -150,6 +173,9 @@ export default function CaptainApp() {
           </div>
         </section>
 
+        {hasOffer && <CaptainOffer onCleared={() => { setHasOffer(false); loadPending(); }} />}
+
+        {!hasOffer && (
         <section className="panel">
           <div className="panelHead">
             <h2>الطلبات الواردة</h2>
@@ -192,11 +218,24 @@ export default function CaptainApp() {
                   <span className="chip">{t.kind === "intercity" ? "بين المدن" : "داخل المدينة"}</span>
                 </div>
 
-                <button className="acceptBtn" onClick={() => accept(t.trip_id)}>قبول الرحلة</button>
+                <div className="offerBtns">
+                  <button className="offerMain" onClick={() => submitOffer(t.trip_id, Number(t.price))}>
+                    اعرض بالسعر {Number(t.price).toFixed(0)} ج
+                  </button>
+                  <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 5)}>+5</button>
+                  <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 10)}>+10</button>
+                  <button className="offerManual" onClick={() => {
+                    const v = prompt(`أدخل السعر المقترح (السعر الافتراضي ${Number(t.price).toFixed(0)} ج):`);
+                    const p = v ? parseFloat(v) : NaN;
+                    if (!p || p <= 0) return;
+                    submitOffer(t.trip_id, p);
+                  }}>✎</button>
+                </div>
               </article>
             ))}
           </div>
         </section>
+        )}
       </main>
     </div>
   );

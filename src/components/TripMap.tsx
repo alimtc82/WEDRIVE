@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
+import { carMarkerSvg } from "../lib/carMarker";
 
 interface Props { tripId: string; status: string; }
 interface MapData {
   status: string;
   pickup: { lat: number; lng: number };
   dropoff: { lat: number; lng: number };
-  captain: { lat: number; lng: number; moving: boolean; updated_at: string } | null;
+  captain: { lat: number; lng: number; moving: boolean; heading: number | null; updated_at: string } | null;
 }
 
 const STYLE: maplibregl.StyleSpecification = {
@@ -20,7 +21,8 @@ const STYLE: maplibregl.StyleSpecification = {
 function pinEl(kind: "captain" | "from" | "to"): HTMLDivElement {
   const el = document.createElement("div");
   if (kind === "captain") {
-    el.innerHTML = `<div class="tripCar">🚗</div>`;
+    el.className = "carMarker";
+    el.innerHTML = `<img class="carImg" src="${carMarkerSvg("#1fbf8f")}" width="38" height="38" alt=""/>`;
   } else {
     el.className = "tripDot " + kind;
   }
@@ -64,6 +66,12 @@ export default function TripMap({ tripId, status }: Props) {
       const pos: [number, number] = [cap.lng, cap.lat];
       if (!markers.current.captain) markers.current.captain = new maplibregl.Marker({ element: pinEl("captain") }).setLngLat(pos).addTo(map);
       else markers.current.captain.setLngLat(pos);
+
+      // تدوير السيارة حسب اتجاه الحركة
+      if (cap.heading != null) {
+        const img = markers.current.captain.getElement().querySelector("img") as HTMLImageElement | null;
+        if (img) img.style.transform = `rotate(${cap.heading}deg)`;
+      }
 
       // الخط: قبل البدء من الكابتن لنقطة العميل، بعده من الانطلاق للوجهة
       if (beforeStart) drawLine(pos, from);

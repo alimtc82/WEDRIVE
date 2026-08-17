@@ -6,11 +6,12 @@ import { haversineKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
 import MapPicker from "../components/MapPicker";
 import ActiveTrip from "../components/ActiveTrip";
+import CustomerOffers from "./CustomerOffers";
 
 export default function CustomerApp() {
   const { profile } = useAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [hasActive, setHasActive] = useState<boolean | null>(null);
+  const [activeTrip, setActiveTrip] = useState<{ id: string; status: string } | null>(null);
 
   const [pickup, setPickup] = useState<LatLng | null>(null);
   const [pickupAddr, setPickupAddr] = useState("");
@@ -26,7 +27,8 @@ export default function CustomerApp() {
 
   const checkActive = useCallback(async () => {
     const { data } = await supabase.rpc("my_active_trip");
-    setHasActive(!!data);
+    if (data) setActiveTrip({ id: data.id, status: data.status });
+    else setActiveTrip(null);
   }, []);
 
   useEffect(() => {
@@ -78,14 +80,19 @@ export default function CustomerApp() {
     setMsg("تم إرسال طلبك ✓ جارٍ البحث عن كابتن قريب");
     setPickup(null); setPickupAddr(""); setDropoff(null); setDropoffAddr("");
     setDistance(null); setFare(null);
+    checkActive();
   };
 
   const body = (
     <div className="roleShell" dir="rtl">
       <TopBar title="WE DRIVE — العميل" />
       <main className="roleMain">
-        {hasActive ? (
-          <ActiveTrip onDone={() => { setHasActive(false); checkActive(); }} />
+        {activeTrip && activeTrip.status === "pending" ? (
+          <CustomerOffers tripId={activeTrip.id}
+            onAccepted={() => checkActive()}
+            onCancel={() => { setActiveTrip(null); checkActive(); }} />
+        ) : activeTrip ? (
+          <ActiveTrip onDone={() => { setActiveTrip(null); checkActive(); }} />
         ) : (
         <section className="panel">
           <div className="panelHead">

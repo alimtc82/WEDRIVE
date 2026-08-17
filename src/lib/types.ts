@@ -29,4 +29,6 @@ export interface Settings {
   service_fee_percent: number;
   dispatch_radius_km: number;
   dispatch_timeout_sec: number;
+  tracking_interval_sec: number;
+  offer_ttl_sec: number;
 }

@@ -31,6 +31,8 @@ export default function AdminApp() {
       service_fee_percent: settings.service_fee_percent,
       dispatch_radius_km: settings.dispatch_radius_km,
       dispatch_timeout_sec: settings.dispatch_timeout_sec,
+      tracking_interval_sec: settings.tracking_interval_sec,
+      offer_ttl_sec: settings.offer_ttl_sec,
       updated_by: profile!.id,
       updated_at: new Date().toISOString(),
     }).eq("id", true);
@@ -81,6 +83,41 @@ export default function AdminApp() {
               </label>
               <label>مهلة قبول الطلب (ثانية)
                 <input type="number" step="1" value={settings.dispatch_timeout_sec} onChange={(e) => upd("dispatch_timeout_sec", e.target.value)} />
+              </label>
+              <label>مهلة تتبّع موقع الكابتن
+                <select
+                  value={[0, 30].includes(settings.tracking_interval_sec) ? String(settings.tracking_interval_sec) : "custom"}
+                  onChange={(e) => {
+                    if (e.target.value === "custom") upd("tracking_interval_sec", "10");
+                    else upd("tracking_interval_sec", e.target.value);
+                  }}
+                >
+                  <option value="30">كل 30 ثانية (الافتراضي)</option>
+                  <option value="0">بث حي مستمر</option>
+                  <option value="custom">نطاق مخصّص</option>
+                </select>
+              </label>
+              {![0, 30].includes(settings.tracking_interval_sec) && (
+                <label>النطاق المخصّص (بالثانية)
+                  <input type="number" step="1" min="2" value={settings.tracking_interval_sec}
+                    onChange={(e) => upd("tracking_interval_sec", e.target.value)} />
+                </label>
+              )}
+              <label>مهلة عرض السعر — دقائق
+                <input type="number" step="1" min="0" value={Math.floor(settings.offer_ttl_sec / 60)}
+                  onChange={(e) => {
+                    const m = parseInt(e.target.value) || 0;
+                    const s = settings.offer_ttl_sec % 60;
+                    upd("offer_ttl_sec", String(m * 60 + s));
+                  }} />
+              </label>
+              <label>مهلة عرض السعر — ثوانٍ
+                <input type="number" step="1" min="0" max="59" value={settings.offer_ttl_sec % 60}
+                  onChange={(e) => {
+                    const s = parseInt(e.target.value) || 0;
+                    const m = Math.floor(settings.offer_ttl_sec / 60);
+                    upd("offer_ttl_sec", String(m * 60 + s));
+                  }} />
               </label>
             </div>
             {saveMsg && <p className={saveMsg.includes("تعذّر") ? "authError" : "okMsg"}>{saveMsg}</p>}

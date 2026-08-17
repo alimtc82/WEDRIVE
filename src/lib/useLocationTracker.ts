@@ -6,8 +6,9 @@ export interface LocationStatus {
   error: string | null;
 }
 
-// يتتبّع موقع الكابتن ويحدّثه في قاعدة البيانات كل 30 ثانية طالما هو متصل
-export function useLocationTracker(active: boolean): LocationStatus {
+// يتتبّع موقع الكابتن ويحدّثه في قاعدة البيانات حسب المهلة المحددة طالما هو متصل
+// intervalSec = 0 يعني بث حي (كل تحديث GPS يُرسل)
+export function useLocationTracker(active: boolean, intervalSec = 30): LocationStatus {
   const watchRef = useRef<number | null>(null);
   const lastSent = useRef<number>(0);
   const [status, setStatus] = useState<LocationStatus>({ ok: false, error: null });
@@ -18,6 +19,7 @@ export function useLocationTracker(active: boolean): LocationStatus {
       setStatus({ ok: false, error: "المتصفح لا يدعم تحديد الموقع" });
       return;
     }
+    const minGap = Math.max(0, intervalSec) * 1000;
 
     const push = async (lng: number, lat: number) => {
       // حماية: لا ترسل أبدًا قيمًا غير صالحة
@@ -54,7 +56,7 @@ export function useLocationTracker(active: boolean): LocationStatus {
     // راقب الموقع، وأرسل كل 30 ثانية كحد أقصى
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        if (Date.now() - lastSent.current >= 30000) {
+        if (Date.now() - lastSent.current >= minGap) {
           push(pos.coords.longitude, pos.coords.latitude);
         }
       },
@@ -65,7 +67,7 @@ export function useLocationTracker(active: boolean): LocationStatus {
     return () => {
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
     };
-  }, [active]);
+  }, [active, intervalSec]);
 
   return status;
 }

@@ -303,3 +303,41 @@ input,button{font-family:inherit}
 /* حالة تتبّع الموقع للكابتن */
 .locWarn{font-size:12px;color:#f5b73d;background:rgba(245,183,61,.1);padding:6px 10px;border-radius:8px;margin-top:6px}
 .locOk{font-size:12px;color:var(--green);margin-top:6px}
+
+/* أيقونة السيارة الموحّدة */
+.carImg{transition:transform .6s ease;transform-origin:center}
+
+/* ===== نظام عروض الأسعار ===== */
+/* أزرار عرض الكابتن */
+.offerBtns{display:flex;gap:6px;align-items:stretch}
+.offerMain{flex:1;padding:11px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer}
+.offerPlus{padding:11px 12px;background:var(--navy);border:1px solid var(--green);color:var(--green);border-radius:9px;font-weight:700;cursor:pointer}
+.offerManual{padding:11px 12px;background:var(--navy);border:1px solid var(--line);color:var(--ink);border-radius:9px;cursor:pointer}
+
+/* شاشة انتظار عرض الكابتن */
+.offerWaitPanel{text-align:center}
+.offerWaitHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.offerWaitHead h2{margin:0;font-size:17px}
+.offerPrice{font-size:20px;font-weight:800;color:var(--green)}
+.offerWaitSub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.splashBar{width:100%;height:8px;background:var(--navy);border-radius:6px;overflow:hidden}
+.splashFill{height:100%;background:linear-gradient(90deg,var(--green),#3b82f6);transition:width .5s linear}
+.splashTime{font-size:12px;color:var(--muted);margin:6px 0 14px}
+.offerWaitNote{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
+
+/* عروض العميل */
+.waitOffers{text-align:center;padding:24px;color:var(--muted)}
+.waitOffers .spinner{margin:0 auto 12px}
+.offersList{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.offerCard{display:flex;align-items:center;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:11px;padding:11px}
+.offerCapInfo{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.offerCapInfo b{display:block;font-size:14px}
+.offerCapMeta{display:block;font-size:12px;color:var(--muted)}
+.offerCapVeh{display:block;font-size:11px;color:var(--muted)}
+.offerCardPrice{text-align:center;flex:none}
+.offerCardPrice b{font-size:20px;color:var(--green);display:block;line-height:1}
+.offerCardPrice span{font-size:11px;color:var(--muted)}
+.offerAccept{padding:10px 16px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;cursor:pointer;flex:none}
+.spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fullCenter{display:flex;justify-content:center;padding:40px}
