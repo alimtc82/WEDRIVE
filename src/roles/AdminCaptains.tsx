@@ -84,7 +84,7 @@ export default function AdminCaptains() {
             <div className="capAvatar">{(c.full_name || "؟").charAt(0)}</div>
             <div className="capMeta">
               <b>{c.full_name || "بدون اسم"}</b>
-              <span>{c.phone} · {c.email}</span>
+              <span>{c.phone} · ★ {Number(c.rating_avg ?? 0).toFixed(1)}</span>
             </div>
             <span className={`capBadge ${c.status}`}>{STATUS_LABEL[c.status]}</span>
           </div>
@@ -135,6 +135,7 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
           <div><span>البريد</span><b>{row.email}</b></div>
           <div><span>الحالة</span><b>{STATUS_LABEL[row.status]}</b></div>
           <div><span>عدد الرحلات</span><b>{row.trips_count}</b></div>
+          <div><span>متوسط التقييم</span><b>★ {Number(row.rating_avg ?? 0).toFixed(1)}</b></div>
         </div>
 
         <div className="expiryRow">
