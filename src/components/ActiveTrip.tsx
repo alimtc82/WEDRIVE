@@ -23,7 +23,8 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
   const [trip, setTrip] = useState<ActiveTrip | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [stars, setStars] = useState(0);
+  // التقييم يفتح دائمًا على 5 نجوم (أعلى تقييم) ويمكن تقليله بالضغط
+  const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [err, setErr] = useState("");
 
