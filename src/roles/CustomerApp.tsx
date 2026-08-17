@@ -85,7 +85,7 @@ export default function CustomerApp() {
 
   const body = (
     <div className="roleShell" dir="rtl">
-      <TopBar title="WE DRIVE — العميل" />
+      <TopBar title="كابتن بنها — العميل" />
       <main className="roleMain">
         {activeTrip && activeTrip.status === "pending" ? (
           <CustomerOffers tripId={activeTrip.id}

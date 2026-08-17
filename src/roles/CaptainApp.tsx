@@ -112,7 +112,7 @@ export default function CaptainApp() {
   if (capStatus && capStatus !== "approved") {
     return (
       <div className="roleShell" dir="rtl">
-        <TopBar title="WE DRIVE — الكابتن" />
+        <TopBar title="كابتن بنها — الكابتن" />
         <main className="roleMain">
           <section className="panel statusPanel">
             {capStatus === "rejected" ? (
@@ -143,7 +143,7 @@ export default function CaptainApp() {
   if (hasActive) {
     return (
       <div className="roleShell" dir="rtl">
-        <TopBar title="WE DRIVE — الكابتن" />
+        <TopBar title="كابتن بنها — الكابتن" />
         <main className="roleMain">
           <ActiveTrip onDone={() => { setHasActive(false); checkActive(); loadPending(); }} />
         </main>
@@ -153,7 +153,7 @@ export default function CaptainApp() {
 
   return (
     <div className="roleShell" dir="rtl">
-      <TopBar title="WE DRIVE — الكابتن" />
+      <TopBar title="كابتن بنها — الكابتن" />
       <main className="roleMain">
         <section className="panel">
           <div className="onlineRow">

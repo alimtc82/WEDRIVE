@@ -41,7 +41,7 @@ export default function AdminApp() {
 
   return (
     <div className="roleShell" dir="rtl">
-      <TopBar title="WE DRIVE — لوحة الأدمن" />
+      <TopBar title="كابتن بنها — لوحة الأدمن" />
       <main className="roleMain wide">
         <div className="adminTabs">
           <button className={tab === "overview" ? "on" : ""} onClick={() => setTab("overview")}>نظرة عامة</button>
