@@ -1,0 +1,6 @@
+import { useState } from "react";
+import { supabase } from "../lib/supabase";
+import { uploadCaptainDoc } from "../lib/captainDocs";
+import DocUpload from "../components/DocUpload";
+import { APP_VERSION } from "../lib/version";
+import "../captainSuccess.css";
