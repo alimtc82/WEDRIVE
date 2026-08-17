@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { uploadCaptainDoc } from "../lib/captainDocs";
 import DocUpload from "../components/DocUpload";
 import { APP_VERSION } from "../lib/version";
+import "../captainSuccess.css";
 
 interface Props { onDone: () => void; onBack: () => void; }
 
