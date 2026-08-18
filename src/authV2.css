@@ -57,6 +57,21 @@
 .avField input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 4px rgba(31,191,143,.12)}
 .avField input::placeholder{color:#5b6584}
 
+/* زر إظهار/إخفاء كلمة المرور داخل حقل avField */
+.avField input.hasEye{padding-inline-end:46px}
+.avField .pwEye{position:absolute;top:50%;transform:translateY(-50%);inset-inline-end:10px;background:0;border:0;cursor:pointer;font-size:17px;opacity:.6;padding:6px;line-height:1;color:var(--ink)}
+.avField .pwEye:hover{opacity:1}
+
+/* مربع "تذكرني" */
+.avRemember{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13.5px;margin:-2px 0 8px;cursor:pointer;user-select:none}
+.avRemember input{width:17px;height:17px;accent-color:#1fbf8f;cursor:pointer;flex:none}
+
+/* حقل كلمة مرور عام مع زر العين (تسجيل الكابتن) */
+.pwWrap{display:block;position:relative}
+.pwWrap input{width:100%;padding-inline-end:46px}
+.pwWrap .pwEye{position:absolute;top:50%;transform:translateY(-50%);inset-inline-end:10px;background:0;border:0;cursor:pointer;font-size:17px;opacity:.6;padding:6px;line-height:1;color:var(--muted)}
+.pwWrap .pwEye:hover{opacity:1}
+
 /* زر الإرسال */
 .avSubmit{width:100%;padding:15px;background:linear-gradient(135deg,#1fbf8f,#0d9b72);color:#fff;border:0;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;margin-top:6px;box-shadow:0 10px 26px rgba(31,191,143,.35);font-family:inherit}
 .avSubmit:disabled{opacity:.6;box-shadow:none}

@@ -39,6 +39,9 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showPass2, setShowPass2] = useState(false);
 
   // المستندات وتواريخ الانتهاء
   const [docs, setDocs] = useState<Docs>({});
@@ -53,6 +56,7 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
   const validateStep1 = () => {
     if (!fullName.trim() || !phone.trim() || !email.trim() || !password) return "أكمل كل البيانات";
     if (password.length < 6) return "كلمة المرور 6 أحرف على الأقل";
+    if (password !== confirmPass) return "كلمتا المرور غير متطابقتين";
     return "";
   };
 
@@ -189,7 +193,16 @@ export default function CaptainRegister({ onDone, onBack }: Props) {
               <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="name@example.com" />
             </label>
             <label>كلمة المرور
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" />
+              <span className="pwWrap">
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPass ? "text" : "password"} placeholder="••••••••" autoComplete="new-password" />
+                <button type="button" className="pwEye" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}>{showPass ? "🙈" : "👁"}</button>
+              </span>
+            </label>
+            <label>تأكيد كلمة المرور
+              <span className="pwWrap">
+                <input value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} type={showPass2 ? "text" : "password"} placeholder="••••••••" autoComplete="new-password" />
+                <button type="button" className="pwEye" onClick={() => setShowPass2(!showPass2)} aria-label={showPass2 ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}>{showPass2 ? "🙈" : "👁"}</button>
+              </span>
             </label>
           </div>
         )}

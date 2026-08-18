@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 import { APP_VERSION } from "../lib/version";
 import { BrandMark } from "../lib/brand";
@@ -7,6 +7,9 @@ import "../authV2.css";
 
 type Screen = "welcome" | "signin" | "register" | "signupCustomer";
 
+// مفتاح حفظ بيانات "تذكرني" في المتصفح
+const REMEMBER_KEY = "cb_remember";
+
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
   const [screen, setScreen] = useState<Screen>("welcome");
@@ -14,17 +17,34 @@ export default function AuthPage() {
   const [captainDone, setCaptainDone] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showPass2, setShowPass2] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // استرجاع بيانات "تذكرني" عند فتح شاشة الدخول
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REMEMBER_KEY);
+      if (saved) {
+        const { email: e, password: p } = JSON.parse(saved);
+        if (e) setEmail(e);
+        if (p) setPassword(p);
+        if (e && p) setRememberMe(true);
+      }
+    } catch { /* تجاهل */ }
+  }, []);
 
   // شاشة تسجيل الكابتن الكاملة بالمستندات (بدون أي تغيير في التدفق)
   if (captainReg) {
     return <CaptainRegister onBack={() => setCaptainReg(false)} onDone={() => { setCaptainReg(false); setCaptainDone(true); setScreen("signin"); }} />;
   }
 
-  const go = (s: Screen) => { setScreen(s); setError(""); };
+  const go = (s: Screen) => { setScreen(s); setError(""); setConfirmPass(""); setShowPass(false); setShowPass2(false); };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,15 +54,33 @@ export default function AuthPage() {
       setError("من فضلك أدخل البريد وكلمة المرور");
       return;
     }
-    if (screen === "signupCustomer" && !fullName.trim()) {
-      setError("من فضلك أدخل الاسم بالكامل");
-      return;
+    if (screen === "signupCustomer") {
+      if (!fullName.trim()) {
+        setError("من فضلك أدخل الاسم بالكامل");
+        return;
+      }
+      if (password.length < 6) {
+        setError("كلمة المرور 6 أحرف على الأقل");
+        return;
+      }
+      if (password !== confirmPass) {
+        setError("كلمتا المرور غير متطابقتين");
+        return;
+      }
     }
 
     setBusy(true);
     try {
       if (screen === "signin") {
         await signIn(email.trim(), password);
+        // حفظ أو مسح بيانات "تذكرني" بعد نجاح الدخول فقط
+        try {
+          if (rememberMe) {
+            localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: email.trim(), password }));
+          } else {
+            localStorage.removeItem(REMEMBER_KEY);
+          }
+        } catch { /* تجاهل */ }
       } else {
         // إنشاء حساب عميل — الكابتن له مسار مستقل بالمستندات
         await signUp({ email: email.trim(), password, fullName: fullName.trim(), phone: phone.trim(), role: "customer" });
@@ -166,8 +204,23 @@ export default function AuthPage() {
                 </div>
                 <div className="avField">
                   <i>🔒</i>
-                  <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="كلمة المرور" autoComplete={screen === "signin" ? "current-password" : "new-password"} />
+                  <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPass ? "text" : "password"} className="hasEye" placeholder="كلمة المرور" autoComplete={screen === "signin" ? "current-password" : "new-password"} />
+                  <button type="button" className="pwEye" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}>{showPass ? "🙈" : "👁"}</button>
                 </div>
+                {screen === "signupCustomer" && (
+                  <div className="avField">
+                    <i>🔒</i>
+                    <input value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} type={showPass2 ? "text" : "password"} className="hasEye" placeholder="تأكيد كلمة المرور" autoComplete="new-password" />
+                    <button type="button" className="pwEye" onClick={() => setShowPass2(!showPass2)} aria-label={showPass2 ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}>{showPass2 ? "🙈" : "👁"}</button>
+                  </div>
+                )}
+
+                {screen === "signin" && (
+                  <label className="avRemember">
+                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                    <span>تذكرني على هذا الجهاز</span>
+                  </label>
+                )}
 
                 {error && <p className="authError" role="alert">{error}</p>}
 
