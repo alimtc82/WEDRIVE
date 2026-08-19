@@ -1,0 +1,43 @@
+workflows:
+  ios-ipa:
+    name: iOS IPA — Captain Banha
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      node: v20
+      xcode: latest
+      cocoapods: default
+      vars:
+        # تُضبط من Codemagic UI → Environment variables (نفس قيم GitHub Secrets)
+        VITE_SUPABASE_URL: $VITE_SUPABASE_URL
+        VITE_SUPABASE_ANON_KEY: $VITE_SUPABASE_ANON_KEY
+    scripts:
+      - name: Install dependencies
+        script: npm install
+
+      - name: Build web app (Vite)
+        script: npm run build
+
+      - name: Capacitor sync (web → iOS)
+        script: npx cap sync ios
+
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      - name: Build unsigned .app
+        script: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package as .ipa
+        script: |
+          mkdir -p Payload
+          cp -r ios/App/build/Build/Products/Debug-iphoneos/App.app Payload/
+          zip -r CaptainBanha.ipa Payload
+    artifacts:
+      - CaptainBanha.ipa
