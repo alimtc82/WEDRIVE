@@ -34,6 +34,10 @@ export default function CaptainApp() {
   const [hasActive, setHasActive] = useState<boolean>(false);
   const [hasOffer, setHasOffer] = useState<boolean>(false);
   const [trackInterval, setTrackInterval] = useState<number>(30);
+  // modal تعديل السعر اليدوي
+  const [priceModal, setPriceModal] = useState<{ open: boolean; tripId: string; defaultPrice: number; value: string }>({
+    open: false, tripId: "", defaultPrice: 0, value: "",
+  });
 
   const checkOffer = useCallback(async () => {
     const { data } = await supabase.rpc("my_active_offer");
@@ -240,16 +244,58 @@ export default function CaptainApp() {
                         <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 5)}>+5</button>
                         <button className="offerPlus" onClick={() => submitOffer(t.trip_id, Number(t.price) + 10)}>+10</button>
                         <button className="offerManual" onClick={() => {
-                          const v = prompt(`أدخل السعر المقترح (السعر الافتراضي ${Number(t.price).toFixed(0)} ج):`);
-                          const p = v ? parseFloat(v) : NaN;
-                          if (!p || p <= 0) return;
-                          submitOffer(t.trip_id, p);
+                          setPriceModal({
+                            open: true,
+                            tripId: t.trip_id,
+                            defaultPrice: Number(t.price),
+                            value: String(Math.round(Number(t.price))),
+                          });
                         }}>✎</button>
                       </div>
                     </article>
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* مودال تعديل السعر اليدوي */}
+            {priceModal.open && (
+              <div className="modalWrap" onClick={(e) => { if (e.target === e.currentTarget) setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" }); }}>
+                <div className="modalCard" style={{ maxWidth: 360 }}>
+                  <div className="modalHead">
+                    <h3>سعر مخصّص</h3>
+                    <button className="modalX" onClick={() => setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" })}>✕</button>
+                  </div>
+                  <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 12px" }}>
+                    السعر الافتراضي: <b style={{ color: "var(--green)" }}>{priceModal.defaultPrice} ج</b>
+                  </p>
+                  <div className="field">
+                    <label>أدخل السعر المقترح (ج.م)</label>
+                    <input
+                      type="number"
+                      autoFocus
+                      value={priceModal.value}
+                      onChange={(e) => setPriceModal((m) => ({ ...m, value: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter") { const p = parseFloat(priceModal.value); if (p > 0) { submitOffer(priceModal.tripId, p); setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" }); } } }}
+                      placeholder="مثال: 45"
+                    />
+                  </div>
+                  <div className="wizBtns" style={{ marginTop: 12 }}>
+                    <button className="wizBack" onClick={() => setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" })}>إلغاء</button>
+                    <button
+                      className="authSubmit"
+                      disabled={!parseFloat(priceModal.value) || parseFloat(priceModal.value) <= 0}
+                      onClick={() => {
+                        const p = parseFloat(priceModal.value);
+                        submitOffer(priceModal.tripId, p);
+                        setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" });
+                      }}
+                    >
+                      تقديم العرض
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
