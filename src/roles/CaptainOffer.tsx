@@ -12,6 +12,8 @@ export default function CaptainOffer({ onCleared }: { onCleared: () => void }) {
   const [remain, setRemain] = useState(0);
   const [total, setTotal] = useState(60);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const totalRef = useRef(60);
+  const prevOfferIdRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("my_active_offer");
@@ -28,12 +30,19 @@ export default function CaptainOffer({ onCleared }: { onCleared: () => void }) {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
-  // عدّاد الوقت المتبقّي
+  // عدّاد الوقت المتبقّي — يتزامن مع offer_ttl_sec في الإعدادات
   useEffect(() => {
     if (!offer) return;
     const exp = new Date(offer.expires_at).getTime();
-    const start = new Date(offer.expires_at).getTime() - 60000; // تقريبي للعرض
-    setTotal(Math.max(1, Math.round((exp - start) / 1000)));
+
+    // لو عرض جديد: احسب total من الفرق الفعلي بين expires_at والوقت الحالي
+    if (prevOfferIdRef.current !== offer.offer_id) {
+      prevOfferIdRef.current = offer.offer_id;
+      const ttl = Math.max(1, Math.round((exp - Date.now()) / 1000));
+      totalRef.current = ttl;
+      setTotal(ttl);
+    }
+
     timerRef.current = setInterval(() => {
       const left = Math.max(0, Math.round((exp - Date.now()) / 1000));
       setRemain(left);
