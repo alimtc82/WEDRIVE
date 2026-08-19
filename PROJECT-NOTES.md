@@ -1,7 +1,7 @@
 # Captain Banha — Project Notes
 
 > Read this file first when starting any new working session on this project.
-> Last updated: 2026-08-19 (v1.10.3)
+> Last updated: 2026-08-19 (v1.10.6)
 
 ## Identity & Infrastructure
 - **App name:** كابتن بنها (Captain Banha) — formerly "WE DRIVE"
@@ -43,14 +43,14 @@ npx cap sync
 ## Feature History (high level)
 - v1.10.2: admin map auto-location; new auth flow (role cards → sign-in, separate register choice); 5-star default rating; My Ratings screens; My Trips (filters + pagination); customer favorite trips; captain registration (document upload with expiry limits: vehicle 3y, driver license 10y, ID 7y); admin docs lightbox.
 - v1.10.3: password confirmation field + show/hide password toggle (customer signup & captain register step 1); "Remember me" on sign-in (saves email+password in localStorage key `cb_remember`).
+- v1.10.6: replaced `prompt()` price input in CaptainApp with inline modal (`priceModal` state, Enter-to-submit, click-outside to close); added `.env.example` template; added GitHub Actions CI workflow (`.github/workflows/ci.yml`, build check on push/PR to main, needs `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` repo secrets); offer countdown timer synced with DB `offer_ttl_sec`.
 
 ## Auth architecture notes
 - `src/pages/AuthPage.tsx`: welcome → role cards → sign-in / register choice; customer signup inline; captain register = separate wizard (`CaptainRegister.tsx`, 3 steps: data → 10 documents → terms, then `save_captain_docs` RPC).
 - Supabase session persists by default (localStorage); "remember me" only prefills credentials.
 
 ## Known backlog / watch-list
-- Offer countdown timer: UI 60s vs DB 20s mismatch
-- GPS spoofing detection; replace `prompt()` price input; add `.env.example`; no CI; OSRM/Nominatim usage-policy compliance
+- GPS spoofing detection; OSRM/Nominatim usage-policy compliance
 - Capacitor files (`capacitor.config.json`, `src/lib/native.ts`, `resources/`) live in repo; `android/` is local-only (add to .gitignore or commit deliberately)
 - Release-signed APK needed for Play Store; background geolocation + FCM push for production
 
