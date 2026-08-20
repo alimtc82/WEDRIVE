@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { supabase } from "../lib/supabase";
 import type { LatLng } from "../lib/geo";
 
 type PinColor = "green" | "red" | "amber";
+
+interface KnownPlace { id: string; name: string; lat: number; lng: number; }
 
 interface Props {
   label: string;
@@ -12,6 +15,8 @@ interface Props {
   address: string;
   autoLocate?: boolean;
   onChange: (loc: LatLng, address: string) => void;
+  // يُستدعى عند اختيار مكان معروف (بمعرّفه) أو أي نقطة أخرى (null)
+  onPlaceSelect?: (placeId: string | null) => void;
 }
 
 // مركز افتراضي: القاهرة
@@ -30,7 +35,7 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-export default function MapPicker({ label, color, value, address, autoLocate, onChange }: Props) {
+export default function MapPicker({ label, color, value, address, autoLocate, onChange, onPlaceSelect }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mapPicker">
@@ -40,20 +45,21 @@ export default function MapPicker({ label, color, value, address, autoLocate, on
         <span>{address || "اضغط للاختيار على الخريطة"}</span>
       </button>
       {open && (
-        <MapPanel color={color} value={value} autoLocate={autoLocate} onChange={onChange} onClose={() => setOpen(false)} />
+        <MapPanel color={color} value={value} autoLocate={autoLocate} onChange={onChange} onPlaceSelect={onPlaceSelect} onClose={() => setOpen(false)} />
       )}
     </div>
   );
 }
 
 function MapPanel({
-  color, value, autoLocate, onChange, onClose,
-}: { color: PinColor; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onClose: () => void; }) {
+  color, value, autoLocate, onChange, onPlaceSelect, onClose,
+}: { color: PinColor; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onPlaceSelect?: Props["onPlaceSelect"]; onClose: () => void; }) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ name: string; loc: LatLng }[]>([]);
+  const [localPlaces, setLocalPlaces] = useState<KnownPlace[]>([]);
   const [searching, setSearching] = useState(false);
 
   const setMarker = useCallback((loc: LatLng) => {
@@ -69,11 +75,12 @@ function MapPanel({
         const p = markerRef.current!.getLngLat();
         const l = { lat: p.lat, lng: p.lng };
         reverseGeocode(l).then((addr) => onChange(l, addr));
+        onPlaceSelect?.(null);
       });
     } else {
       markerRef.current.setLngLat([loc.lng, loc.lat]);
     }
-  }, [color, onChange]);
+  }, [color, onChange, onPlaceSelect]);
 
   // تهيئة الخريطة مرة واحدة
   useEffect(() => {
@@ -101,6 +108,7 @@ function MapPanel({
       const loc = { lat: c.latitude, lng: c.longitude };
       setMarker(loc);
       reverseGeocode(loc).then((addr) => onChange(loc, addr));
+      onPlaceSelect?.(null);
     });
 
     // إصلاح مشكلة الخريطة الفاضية في MapLibre 6.x + تحديد الموقع تلقائيًا أول مرة
@@ -120,10 +128,26 @@ function MapPanel({
       const loc = { lat: e.lngLat.lat, lng: e.lngLat.lng };
       setMarker(loc);
       reverseGeocode(loc).then((addr) => onChange(loc, addr));
+      onPlaceSelect?.(null);
     });
 
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
-  }, [value, autoLocate, setMarker, onChange]);
+  }, [value, autoLocate, setMarker, onChange, onPlaceSelect]);
+
+  // تلميحات الأماكن المعروفة الملونة أثناء الكتابة (من قاعدة البيانات، بأولوية على نتائج الخريطة)
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setLocalPlaces([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("places")
+        .select("id,name,lat,lng")
+        .ilike("name", `%${q}%`)
+        .limit(5);
+      setLocalPlaces((data as KnownPlace[]) || []);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
   // البحث عبر Nominatim
   const runSearch = async () => {
@@ -146,10 +170,23 @@ function MapPanel({
     }
   };
 
+  // اختيار مكان معروف من التلميحات الملونة
+  const pickKnown = (p: KnownPlace) => {
+    const loc = { lat: p.lat, lng: p.lng };
+    mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15 });
+    setMarker(loc);
+    onChange(loc, p.name);
+    onPlaceSelect?.(p.id);
+    setLocalPlaces([]);
+    setResults([]);
+    setQuery(p.name);
+  };
+
   const pick = (r: { name: string; loc: LatLng }) => {
     mapRef.current?.flyTo({ center: [r.loc.lng, r.loc.lat], zoom: 15 });
     setMarker(r.loc);
     onChange(r.loc, r.name);
+    onPlaceSelect?.(null);
     setResults([]);
     setQuery(r.name);
   };
@@ -164,6 +201,16 @@ function MapPanel({
           {searching ? "..." : "بحث"}
         </button>
       </div>
+      {localPlaces.length > 0 && (
+        <ul className="searchResults localPlaces">
+          {localPlaces.map((p) => (
+            <li key={p.id} onClick={() => pickKnown(p)}>
+              <span className="knownBadge">مكان معروف</span>
+              {p.name}
+            </li>
+          ))}
+        </ul>
+      )}
       {results.length > 0 && (
         <ul className="searchResults">
           {results.map((r, i) => (
