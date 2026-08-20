@@ -11,6 +11,10 @@ import MyTrips from "../pages/MyTrips";
 import MyRatings from "../pages/MyRatings";
 import "../listPages.css";
 
+const MAX_STOPS = 3;
+
+interface StopEntry { loc: LatLng | null; addr: string; }
+
 export default function CustomerApp() {
   const { profile } = useAuth();
   const [tab, setTab] = useState<"home" | "trips" | "ratings">("home");
@@ -21,6 +25,8 @@ export default function CustomerApp() {
   const [pickupAddr, setPickupAddr] = useState("");
   const [dropoff, setDropoff] = useState<LatLng | null>(null);
   const [dropoffAddr, setDropoffAddr] = useState("");
+  // نقاط توقف اختيارية (حتى 3) بين الانطلاق والوجهة
+  const [stops, setStops] = useState<StopEntry[]>([]);
 
   const [kind, setKind] = useState<TripKind>("in_city");
   const [distance, setDistance] = useState<number | null>(null);
@@ -49,16 +55,20 @@ export default function CustomerApp() {
     });
   }, []);
 
+  // المسافة = مجموع المراحل: انطلاق ← كل توقف محدد ← وجهة
   useEffect(() => {
     if (!pickup || !dropoff || !settings) { setDistance(null); setFare(null); return; }
-    const d = haversineKm(pickup, dropoff);
+    const pts: LatLng[] = [pickup, ...stops.filter((s) => s.loc).map((s) => s.loc!), dropoff];
+    let d = 0;
+    for (let i = 0; i < pts.length - 1; i++) d += haversineKm(pts[i], pts[i + 1]);
+    d = Math.round(d * 100) / 100;
     setDistance(d);
     const k = guessKind(d);
     setKind(k);
     const ppk = k === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
     const raw = Math.round(d * ppk * 100) / 100;
     setFare(Math.max(raw, settings.min_fare));
-  }, [pickup, dropoff, settings]);
+  }, [pickup, dropoff, stops, settings]);
 
   useEffect(() => {
     if (distance == null || !settings) return;
@@ -70,6 +80,7 @@ export default function CustomerApp() {
   const requestTrip = async () => {
     setErr(""); setMsg("");
     if (!pickup || !dropoff) { setErr("حدّد مكان الانطلاق والوجهة على الخريطة"); return; }
+    if (stops.some((s) => !s.loc)) { setErr("حدّد مكان كل نقاط التوقف أو احذفها"); return; }
     if (distance == null || distance <= 0) { setErr("تعذّر حساب المسافة"); return; }
 
     setBusy(true);
@@ -77,12 +88,14 @@ export default function CustomerApp() {
       p_pickup_lng: pickup.lng, p_pickup_lat: pickup.lat, p_pickup_address: pickupAddr,
       p_dropoff_lng: dropoff.lng, p_dropoff_lat: dropoff.lat, p_dropoff_address: dropoffAddr,
       p_distance_km: distance, p_kind: kind,
+      p_stops: stops.filter((s) => s.loc).map((s) => ({ lat: s.loc!.lat, lng: s.loc!.lng, address: s.addr })),
     });
     setBusy(false);
 
     if (error) { setErr("تعذّر إنشاء الطلب: " + error.message); return; }
     setMsg("تم إرسال طلبك ✓ جارٍ البحث عن كابتن قريب");
     setPickup(null); setPickupAddr(""); setDropoff(null); setDropoffAddr("");
+    setStops([]);
     setDistance(null); setFare(null);
     checkActive();
   };
@@ -91,6 +104,7 @@ export default function CustomerApp() {
   const pickFavorite = (t: { pickup: LatLng; pickupAddr: string; dropoff: LatLng; dropoffAddr: string }) => {
     setPickup(t.pickup); setPickupAddr(t.pickupAddr);
     setDropoff(t.dropoff); setDropoffAddr(t.dropoffAddr);
+    setStops([]);
     setTab("home");
   };
 
@@ -124,6 +138,25 @@ export default function CustomerApp() {
 
                 <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
                   onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
+
+                {/* نقاط التوقف الاختيارية (حتى 3) */}
+                {stops.map((s, i) => (
+                  <div className="stopRow" key={i}>
+                    <MapPicker label={`نقطة توقف ${i + 1}`} color="amber" value={s.loc} address={s.addr}
+                      onChange={(loc, addr) => setStops((arr) => arr.map((x, j) => (j === i ? { loc, addr } : x)))} />
+                    <button type="button" className="stopRemove"
+                      onClick={() => setStops((arr) => arr.filter((_, j) => j !== i))}>
+                      ✕ إزالة نقطة التوقف
+                    </button>
+                  </div>
+                ))}
+                {stops.length < MAX_STOPS && (
+                  <button type="button" className="addStopBtn"
+                    onClick={() => setStops((arr) => [...arr, { loc: null, addr: "" }])}>
+                    ＋ إضافة نقطة توقف ({stops.length}/{MAX_STOPS})
+                  </button>
+                )}
+
                 <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
                   onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />
 
@@ -137,7 +170,7 @@ export default function CustomerApp() {
 
                 <div className="fareBox">
                   <div>
-                    <span>المسافة</span>
+                    <span>المسافة{stops.length > 0 ? " (شاملة التوقفات)" : ""}</span>
                     <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
                   </div>
                   <div style={{ textAlign: "left" }}>

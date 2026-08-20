@@ -3,6 +3,8 @@ import { supabase } from "../lib/supabase";
 import StarRating from "./StarRating";
 import TripMap from "./TripMap";
 
+interface TripStop { lat: number; lng: number; address?: string; }
+
 interface ActiveTrip {
   id: string; status: string; kind: string;
   pickup_address: string; dropoff_address: string;
@@ -21,6 +23,7 @@ const STATUS_STEPS = [
 
 export default function ActiveTrip({ onDone }: { onDone: () => void }) {
   const [trip, setTrip] = useState<ActiveTrip | null>(null);
+  const [stops, setStops] = useState<TripStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   // التقييم يفتح دائمًا على 5 نجوم (أعلى تقييم) ويمكن تقليله بالضغط
@@ -33,6 +36,16 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
     setTrip(data as ActiveTrip | null);
     setLoading(false);
   }, []);
+
+  // جلب نقاط التوقف للرحلة الحالية (تُقرأ مباشرة من جدول الرحلات)
+  useEffect(() => {
+    if (!trip?.id) { setStops([]); return; }
+    supabase.from("trips").select("stops").eq("id", trip.id).single()
+      .then(({ data }) => {
+        if (data && Array.isArray(data.stops)) setStops(data.stops as TripStop[]);
+        else setStops([]);
+      });
+  }, [trip?.id]);
 
   useEffect(() => {
     load();
@@ -112,13 +125,18 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* المسار والسعر */}
+      {/* المسار والسعر — تشمل نقاط التوقف إن وُجدت */}
       <div className="tripRoute">
         <div className="rSeg"><i className="dotFrom" /><span>{trip.pickup_address}</span></div>
+        {stops.map((s, i) => (
+          <div className="rSeg" key={i}>
+            <i className="dotStop" /><span>{s.address || `نقطة توقف ${i + 1}`}</span>
+          </div>
+        ))}
         <div className="rSeg"><i className="dotTo" /><span>{trip.dropoff_address}</span></div>
       </div>
       <div className="fareBox">
-        <div><span>المسافة</span><b className="distVal">{trip.distance_km} كم</b></div>
+        <div><span>المسافة{stops.length > 0 ? " (شاملة التوقفات)" : ""}</span><b className="distVal">{trip.distance_km} كم</b></div>
         <div style={{ textAlign: "left" }}><span>الأجرة (نقدًا)</span><b>{Number(trip.price).toFixed(2)} ج.م</b></div>
       </div>
 
