@@ -1,6 +1,6 @@
 {
   "name": "captain-banha",
-  "version": "1.10.8",
+  "version": "1.10.9",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
     "@capacitor/status-bar": "^8.0.1",
     "@supabase/supabase-js": "^2.112.3",
