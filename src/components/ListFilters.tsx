@@ -11,8 +11,9 @@ export interface FiltersState {
   page: number;
 }
 
+// الافتراضي: اليوم — في رحلاتي وتقييماتي وكل القوائم الزمنية
 export function initialFilters(): FiltersState {
-  return { time: "month", customFrom: "", customTo: "", kind: "", pageSize: 20, page: 0 };
+  return { time: "today", customFrom: "", customTo: "", kind: "", pageSize: 20, page: 0 };
 }
 
 const dstr = (x: Date) => x.toISOString().slice(0, 10);
