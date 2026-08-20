@@ -190,9 +190,8 @@ export default function CustomerApp() {
                     <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <span>{fixedPrice != null ? "السعر" : "السعر المقترح"}</span>
+                    <span>السعر المقترح</span>
                     <b>{(fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(2)} ج.م` : "—"}</b>
-                    {fixedPrice != null && <span className="fixedFareTag">سعر ثابت</span>}
                   </div>
                 </div>
 
