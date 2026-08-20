@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as maplibregl from "maplibre-gl";
+import type { GeoJSON } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import { carMarkerSvg, carColor } from "../lib/carMarker";
@@ -54,9 +55,9 @@ export default function AdminMap() {
       ? lineFeature(coords)
       : { type: "FeatureCollection" as const, features: [] };
     const src = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
-    if (src) src.setData(data as GeoJSON.GeoJSON);
+    if (src) src.setData(data as GeoJSON);
     else {
-      map.addSource(id, { type: "geojson", data: data as GeoJSON.GeoJSON });
+      map.addSource(id, { type: "geojson", data: data as GeoJSON });
       map.addLayer({ id, type: "line", source: id,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": color, "line-width": width, "line-opacity": 0.9 } });
@@ -98,7 +99,7 @@ export default function AdminMap() {
 
     let route = routeCache.current[cacheKey];
     if (!route) {
-      route = await fetchRoute(anchor, end);
+      route = await fetchRoute([anchor, end]);
       routeCache.current[cacheKey] = route;
     }
 

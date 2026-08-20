@@ -22,9 +22,11 @@ export default function CustomerOffers({ tripId, onAccepted, onCancel }: {
   useEffect(() => {
     load();
     const ch = supabase.channel("cust-offers")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip_offers" }, () => load())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trip_offers", filter: `trip_id=eq.${tripId}`,
+      }, () => load())
       .subscribe();
-    const iv = setInterval(load, 5000);
+    const iv = setInterval(load, 15000);
     return () => { supabase.removeChannel(ch); clearInterval(iv); };
   }, [load]);
 

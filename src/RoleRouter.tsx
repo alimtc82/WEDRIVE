@@ -1,8 +1,16 @@
+import { lazy, Suspense } from "react";
 import { useAuth } from "./lib/AuthContext";
 import AuthPage from "./pages/AuthPage";
-import CustomerApp from "./roles/CustomerApp";
-import CaptainApp from "./roles/CaptainApp";
-import AdminApp from "./roles/AdminApp";
+
+const CustomerApp = lazy(() => import("./roles/CustomerApp"));
+const CaptainApp = lazy(() => import("./roles/CaptainApp"));
+const AdminApp = lazy(() => import("./roles/AdminApp"));
+
+const roleFallback = (
+  <div className="fullCenter" dir="rtl">
+    <div className="spinner" aria-label="جارٍ تحميل الواجهة" />
+  </div>
+);
 
 export default function RoleRouter() {
   const { session, profile, loading, signOut } = useAuth();
@@ -44,12 +52,17 @@ export default function RoleRouter() {
     );
   }
 
+  let roleApp;
   switch (profile.role) {
     case "captain":
-      return <CaptainApp />;
+      roleApp = <CaptainApp />;
+      break;
     case "admin":
-      return <AdminApp />;
+      roleApp = <AdminApp />;
+      break;
     default:
-      return <CustomerApp />;
+      roleApp = <CustomerApp />;
   }
+
+  return <Suspense fallback={roleFallback}>{roleApp}</Suspense>;
 }

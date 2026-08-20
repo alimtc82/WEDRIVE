@@ -60,10 +60,12 @@ export default function CustomerApp() {
   useEffect(() => {
     checkActive();
     const ch = supabase.channel("cust-active")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => checkActive())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trips", filter: `customer_id=eq.${profile!.id}`,
+      }, () => checkActive())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [checkActive]);
+  }, [checkActive, profile]);
 
   useEffect(() => {
     supabase.from("settings").select("*").single().then(({ data }) => {

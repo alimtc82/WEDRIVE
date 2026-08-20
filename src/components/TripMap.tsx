@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as maplibregl from "maplibre-gl";
+import type { GeoJSON } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import { carMarkerSvg } from "../lib/carMarker";
@@ -71,9 +72,9 @@ export default function TripMap({ tripId, status }: Props) {
       ? lineFeature(coords)
       : { type: "FeatureCollection" as const, features: [] };
     const src = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
-    if (src) src.setData(data as GeoJSON.GeoJSON);
+    if (src) src.setData(data as GeoJSON);
     else {
-      map.addSource(id, { type: "geojson", data: data as GeoJSON.GeoJSON });
+      map.addSource(id, { type: "geojson", data: data as GeoJSON });
       map.addLayer({ id, type: "line", source: id,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": color, "line-width": width, "line-opacity": 0.9 } });
@@ -178,7 +179,9 @@ export default function TripMap({ tripId, status }: Props) {
     const interval = setInterval(load, 15000);
     const ch = supabase.channel("trip-map-" + tripId)
       .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => load())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trips", filter: `id=eq.${tripId}`,
+      }, () => load())
       .subscribe();
 
     return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markers.current = { stops: [] }; };

@@ -1,12 +1,11 @@
 # Captain Banha — Project Notes
 
 > Read this file first when starting any new working session on this project.
-> Last updated: 2026-08-19 (v1.10.6)
+> Last updated: 2026-08-21 (v1.16.2)
 
 ## Identity & Infrastructure
 - **App name:** كابتن بنها (Captain Banha) — formerly "WE DRIVE"
 - **Repo:** `alimtc82/WEDRIVE` (main branch)
-- **Supabase project ref:** `ajjjwfxbahgreahdmnza`
 - **Web deploy:** Vercel, auto-deploys on push to main → `wedrive.mtc-group.online`
 - **Stack:** React + TypeScript + Vite (rolldown) + MapLibre GL v6 + Supabase (auth/DB/storage/realtime)
 - **Build output:** `dist/client` (see `vite.config.ts`, `base: "./"`, custom plugin copies MapLibre worker files)
@@ -20,13 +19,6 @@
 - Native init: `src/lib/native.ts` — called from `src/main.tsx`, guarded by `Capacitor.isNativePlatform()` so web is unaffected
 - App icon source: `resources/icon.png` (generated steering-wheel-in-pin logo); regenerate via `npx capacitor-assets generate --android`
 - Location permissions were added to `android/app/src/main/AndroidManifest.xml` (ACCESS_FINE/COARSE_LOCATION)
-
-### User's local build machine (Windows 10)
-- Project path: `E:\wedrive\WEDRIVE-main` (C: drive is nearly full — keep everything on E:)
-- npm cache moved to `E:\npm-cache`
-- Android Studio: **Quail 3 | 2026.1.3** (older Koala can't handle AGP 8.13.0); Gradle JDK must be **jbr-25** (E:\AND STU\jbr) — never the old JBR 17
-- SDK: `E:\AppData\Local\Android\Sdk`
-- If Gradle memory errors: `org.gradle.jvmargs=-Xmx1536m` (android/gradle.properties); never set `java.home` in `android/.gradle/config.properties` (it's a stale cache override that breaks builds)
 
 ### APK update cycle (after any web change)
 ```
@@ -42,12 +34,13 @@ npx cap sync
 
 ## Feature History (high level)
 - v1.10.2: admin map auto-location; new auth flow (role cards → sign-in, separate register choice); 5-star default rating; My Ratings screens; My Trips (filters + pagination); customer favorite trips; captain registration (document upload with expiry limits: vehicle 3y, driver license 10y, ID 7y); admin docs lightbox.
-- v1.10.3: password confirmation field + show/hide password toggle (customer signup & captain register step 1); "Remember me" on sign-in (saves email+password in localStorage key `cb_remember`).
+- v1.10.3: password confirmation field + show/hide password toggle (customer signup & captain register step 1); "Remember me" on sign-in.
+- v1.16.2: "Remember me" stores email only; fixed-route coordinates are verified server-side; privileged RPC surface and document paths are hardened; CI runs type-checks/tests; location writes and Realtime subscriptions are throttled/scoped.
 - v1.10.6: replaced `prompt()` price input in CaptainApp with inline modal (`priceModal` state, Enter-to-submit, click-outside to close); added `.env.example` template; added GitHub Actions CI workflow (`.github/workflows/ci.yml`, build check on push/PR to main, needs `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` repo secrets); offer countdown timer synced with DB `offer_ttl_sec`.
 
 ## Auth architecture notes
 - `src/pages/AuthPage.tsx`: welcome → role cards → sign-in / register choice; customer signup inline; captain register = separate wizard (`CaptainRegister.tsx`, 3 steps: data → 10 documents → terms, then `save_captain_docs` RPC).
-- Supabase session persists by default (localStorage); "remember me" only prefills credentials.
+- Supabase session persists by default; "remember me" stores and prefills the email only and never persists a password.
 
 ## Known backlog / watch-list
 - GPS spoofing detection; OSRM/Nominatim usage-policy compliance

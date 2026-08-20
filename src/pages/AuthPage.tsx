@@ -31,10 +31,15 @@ export default function AuthPage() {
     try {
       const saved = localStorage.getItem(REMEMBER_KEY);
       if (saved) {
-        const { email: e, password: p } = JSON.parse(saved);
-        if (e) setEmail(e);
-        if (p) setPassword(p);
-        if (e && p) setRememberMe(true);
+        const parsed = JSON.parse(saved) as { email?: unknown; password?: unknown };
+        const rememberedEmail = typeof parsed.email === "string" ? parsed.email : "";
+        if (rememberedEmail) {
+          setEmail(rememberedEmail);
+          setRememberMe(true);
+        }
+
+        // Migrate legacy entries immediately: passwords must never persist in web storage.
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: rememberedEmail }));
       }
     } catch { /* تجاهل */ }
   }, []);
@@ -76,7 +81,7 @@ export default function AuthPage() {
         // حفظ أو مسح بيانات "تذكرني" بعد نجاح الدخول فقط
         try {
           if (rememberMe) {
-            localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: email.trim(), password }));
+            localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: email.trim() }));
           } else {
             localStorage.removeItem(REMEMBER_KEY);
           }

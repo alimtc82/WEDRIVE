@@ -47,10 +47,12 @@ export default function CaptainApp() {
   useEffect(() => {
     checkOffer();
     const ch = supabase.channel("cap-offer-check")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip_offers" }, () => checkOffer())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trip_offers", filter: `captain_id=eq.${profile!.id}`,
+      }, () => checkOffer())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [checkOffer]);
+  }, [checkOffer, profile]);
 
   useEffect(() => {
     supabase.from("settings").select("tracking_interval_sec").single()
@@ -68,10 +70,12 @@ export default function CaptainApp() {
   useEffect(() => {
     checkActive();
     const ch = supabase.channel("cap-active")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => checkActive())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trips", filter: `captain_id=eq.${profile!.id}`,
+      }, () => checkActive())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [checkActive]);
+  }, [checkActive, profile]);
 
   useEffect(() => {
     supabase.from("captains").select("status,reject_reason").eq("id", profile!.id).single()
@@ -97,7 +101,9 @@ export default function CaptainApp() {
     loadPending();
     const channel = supabase
       .channel("pending-trips")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => loadPending())
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trips", filter: "status=eq.pending",
+      }, () => loadPending())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [online, loadPending]);
