@@ -6,7 +6,7 @@ import type { LatLng } from "../lib/geo";
 
 type PinColor = "green" | "red" | "amber";
 
-interface KnownPlace { id: string; name: string; lat: number; lng: number; }
+interface KnownPlace { id: string; name: string; lat: number; lng: number; district_name: string | null; city_name: string | null; }
 
 interface Props {
   label: string;
@@ -166,12 +166,13 @@ function MapPanel({
     }
   };
 
-  // اختيار مكان معروف من التلميحات الملونة
+  // اختيار مكان معروف من التلميحات
   const pickKnown = (p: KnownPlace) => {
     const loc = { lat: p.lat, lng: p.lng };
     mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15 });
     setMarker(loc);
-    onChange(loc, p.name);
+    const label = p.district_name ? `${p.name} — ${p.district_name}` : p.name;
+    onChange(loc, label);
     onPlaceSelect?.(p.id);
     setLocalPlaces([]);
     setResults([]);
@@ -201,8 +202,10 @@ function MapPanel({
         <ul className="searchResults localPlaces">
           {localPlaces.map((p) => (
             <li key={p.id} onClick={() => pickKnown(p)}>
-              <span className="knownBadge">مكان معروف</span>
-              {p.name}
+              <span className="lpName">{p.name}</span>
+              {(p.district_name || p.city_name) && (
+                <small className="lpCtx">{[p.district_name, p.city_name].filter(Boolean).join(" — ")}</small>
+              )}
             </li>
           ))}
         </ul>
