@@ -44,14 +44,14 @@ input,button{font-family:inherit}
 
 /* ===== Role shell ===== */
 .roleShell{min-height:100vh;display:flex;flex-direction:column}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--navy2);border-bottom:1px solid var(--line)}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-right,0px)) 12px calc(18px + env(safe-area-inset-left,0px));background:var(--navy2);border-bottom:1px solid var(--line)}
 .topbarBrand{display:flex;align-items:center;gap:10px}
 .topbarUser{display:flex;align-items:center;gap:10px}
 .uAvatar{width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.18);color:#9cc0ff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .uMeta b{display:block;font-size:13px}
 .uMeta span{font-size:11px;color:var(--muted)}
 .signOut{background:var(--navy);border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px}
-.roleMain{width:100%;max-width:560px;margin:0 auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+.roleMain{width:100%;max-width:560px;margin:0 auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
 .roleMain.wide{max-width:900px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
 .panelHead h2{margin:0 0 4px;font-size:18px}
@@ -144,7 +144,7 @@ input,button{font-family:inherit}
 .distVal{color:var(--ink)!important}
 .fareBox>div{display:flex;flex-direction:column;gap:2px}
 
-.verTag{position:fixed;bottom:12px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.6;pointer-events:none;z-index:5}
+.verTag{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.6;pointer-events:none;z-index:5}
 
 /* أزرار تحكم الخريطة (زر الموقع الحالي) */
 .maplibregl-ctrl-group{border-radius:8px!important;overflow:hidden}
@@ -199,7 +199,7 @@ input,button{font-family:inherit}
 .capBadge.rejected,.capBadge.suspended{background:rgba(226,86,74,.15);color:var(--danger)}
 
 /* مودال تفاصيل الكابتن */
-.modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));z-index:100}
 .modalCard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto}
 .modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .modalHead h3{margin:0;font-size:18px}
@@ -249,7 +249,7 @@ input,button{font-family:inherit}
 .docThumb img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:8px;border:1px solid var(--line);transition:border-color .15s}
 .docThumb:hover img{border-color:var(--green)}
 .lbWrap{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:flex;align-items:center;justify-content:center}
-.lbClose{position:absolute;top:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:20px;cursor:pointer;z-index:210}
+.lbClose{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:16px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:20px;cursor:pointer;z-index:210}
 .lbClose:hover{background:rgba(255,255,255,.22)}
 .lbNav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:30px;line-height:1;cursor:pointer;z-index:210;display:flex;align-items:center;justify-content:center}
 .lbNav:hover{background:rgba(255,255,255,.22)}
