@@ -9,6 +9,37 @@
 /* شارة السعر الثابت في صندوق الأجرة */
 .fixedFareTag{display:inline-block;font-size:11px;font-weight:700;color:#04241c;background:var(--green);padding:3px 10px;border-radius:12px;margin-top:4px}
 
+/* ===== قائمة المشاوير الثابتة في شاشة العميل (v1.15.0) ===== */
+.fixedRoutes{margin-bottom:16px;background:var(--navy);border:1px solid rgba(31,191,143,.35);border-radius:12px;padding:12px}
+.frTitle{margin:0 0 10px;font-size:14px;color:#9ff0d6;font-weight:700}
+.frList{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto}
+.frRow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;transition:border-color .15s}
+.frRow.on{border-color:var(--green);background:rgba(31,191,143,.08)}
+.frMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.frMain b{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.frMain small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.frSide{flex:none;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.frPrice{font-size:14px;font-weight:800;color:var(--green)}
+.frPick{padding:7px 12px;background:var(--green);border:0;color:#04241c;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap}
+.frPick.rev{background:var(--navy);color:var(--ink);border:1px solid var(--line)}
+.frPick:hover{filter:brightness(1.1)}
+.frClear{width:100%;margin-top:10px;padding:9px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:8px;cursor:pointer;font-size:12px}
+@media (max-width:420px){
+  .frRow{flex-direction:column;align-items:stretch}
+  .frSide{justify-content:flex-start}
+}
+
+/* مفتاح إظهار/إخفاء في لوحة الأدمن */
+.apToggle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+.apToggle b{font-size:14px;color:var(--ink)}
+.apToggle small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.switch{position:relative;width:52px;height:28px;flex:none;cursor:pointer}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;background:var(--card);border:1px solid var(--line);border-radius:20px;transition:.2s}
+.switch .track::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:.2s}
+.switch input:checked + .track{background:rgba(31,191,143,.25);border-color:var(--green)}
+.switch input:checked + .track::after{transform:translateX(-24px);background:var(--green)}
+
 /* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.14.2) ===== */
 
 /* حماية عامة من الطفح خارج التصميم */
