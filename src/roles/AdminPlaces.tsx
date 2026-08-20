@@ -6,7 +6,9 @@ interface City { id: string; name: string; }
 interface District { id: string; name: string; city_id: string; cities?: { name: string } | null; }
 interface Place {
   id: string; name: string; lat: number; lng: number; district_id: string | null;
+  parent_place_id: string | null;
   districts?: { name: string; cities?: { name: string } | null } | null;
+  parent?: { name: string } | null;
 }
 interface RouteRow {
   id: string; name: string | null; price: number; reverse_price: number | null; notes: string | null;
@@ -80,7 +82,7 @@ function PlaceSearch({ label, value, onPick, excludeId }: {
     const s = q.trim();
     if (value) { setOpts([]); return; }
     const t = setTimeout(async () => {
-      let query = supabase.from("places").select("id,name,lat,lng,district_id,districts(name,cities(name))").order("name").limit(8);
+      let query = supabase.from("places").select("id,name,lat,lng,district_id,parent_place_id,districts(name,cities(name)),parent:places!parent_place_id(name)").order("name").limit(8);
       if (s) query = query.ilike("name", `%${s}%`);
       const { data } = await query;
       setOpts(((data as Place[]) || []).filter((p) => p.id !== excludeId));
@@ -95,7 +97,7 @@ function PlaceSearch({ label, value, onPick, excludeId }: {
         <div className="psPicked">
           <span className="knownBadge">محفوظ</span>
           <b>{value.name}</b>
-          <small>{value.districts?.name ? `${value.districts.name} — ` : ""}{value.districts?.cities?.name || ""}</small>
+          <small>{value.parent?.name ? `${value.parent.name} — ` : ""}{value.districts?.name ? `${value.districts.name} — ` : ""}{value.districts?.cities?.name || ""}</small>
           <button type="button" className="psClear" onClick={() => { onPick(null); setQ(""); }}>✕</button>
         </div>
       ) : (
@@ -111,7 +113,7 @@ function PlaceSearch({ label, value, onPick, excludeId }: {
               {opts.map((p) => (
                 <li key={p.id} onClick={() => { onPick(p); setOpen(false); }}>
                   <Hi text={p.name} q={q.trim()} />
-                  <small>{p.districts?.name ? ` — ${p.districts.name}` : ""}{p.districts?.cities?.name ? ` — ${p.districts.cities.name}` : ""}</small>
+                  <small>{p.parent?.name ? ` — ${p.parent.name}` : ""}{p.districts?.name ? ` — ${p.districts.name}` : ""}{p.districts?.cities?.name ? ` — ${p.districts.cities.name}` : ""}</small>
                 </li>
               ))}
             </ul>
@@ -142,6 +144,7 @@ export default function AdminPlaces() {
   const [editDist, setEditDist] = useState<District | null>(null);
   const [placeName, setPlaceName] = useState("");
   const [placeDist, setPlaceDist] = useState("");
+  const [placeParent, setPlaceParent] = useState("");
   const [placeCoords, setPlaceCoords] = useState("");
   const [editPlace, setEditPlace] = useState<Place | null>(null);
   const [routeName, setRouteName] = useState("");
@@ -164,7 +167,7 @@ export default function AdminPlaces() {
     setDistricts((data as District[]) || []);
   }, []);
   const loadPlaces = useCallback(async () => {
-    const { data } = await supabase.from("places").select("id,name,lat,lng,district_id,districts(name,cities(name))").order("name");
+    const { data } = await supabase.from("places").select("id,name,lat,lng,district_id,parent_place_id,districts(name,cities(name)),parent:places!parent_place_id(name)").order("name");
     setPlaces((data as Place[]) || []);
   }, []);
   const loadRoutes = useCallback(async () => {
@@ -228,17 +231,17 @@ export default function AdminPlaces() {
     if (!name || !placeDist) { fail("اكتب الاسم واختر الحي"); return; }
     if (!coords) { fail("أدخل الإحداثيات بصيغة خرائط جوجل — مثال: 30.4706813, 31.1844191"); return; }
     setBusy(true);
-    const payload = { name, lat: coords.lat, lng: coords.lng, district_id: placeDist };
+    const payload = { name, lat: coords.lat, lng: coords.lng, district_id: placeDist, parent_place_id: placeParent || null };
     const { error } = editPlace
       ? await supabase.from("places").update(payload).eq("id", editPlace.id)
       : await supabase.from("places").insert(payload);
     setBusy(false);
     if (error) { fail("تعذّر الحفظ: " + error.message); return; }
     flash(editPlace ? "تم تعديل المكان ✓" : "تمت إضافة المكان ✓");
-    setPlaceName(""); setPlaceCoords(""); setEditPlace(null); loadPlaces();
+    setPlaceName(""); setPlaceCoords(""); setPlaceParent(""); setEditPlace(null); loadPlaces();
   };
   const delPlace = async (p: Place) => {
-    if (!window.confirm(`حذف «${p.name}»؟ المشاوير المرتبطة به ستُحذف أيضًا.`)) return;
+    if (!window.confirm(`حذف «${p.name}»؟ المشاوير المرتبطة به ستُحذف والأماكن التابعة له ستفقد ارتباطها.`)) return;
     const { error } = await supabase.from("places").delete().eq("id", p.id);
     if (error) { fail("تعذّر الحذف: " + error.message); return; }
     flash("تم حذف المكان ✓"); loadPlaces(); loadRoutes();
@@ -282,15 +285,20 @@ export default function AdminPlaces() {
     setBusy(true);
     let ok = 0, bad = 0;
     for (const r of data) {
-      const [cityName, distName, placeName, latS, lngS] = r.map((x) => (x || "").trim());
+      const [cityName, distName, placeName, latS, lngS, parentName] = r.map((x) => (x || "").trim());
       const lat = parseFloat(latS), lng = parseFloat(lngS);
       if (!cityName || !distName || !placeName || Number.isNaN(lat) || Number.isNaN(lng)) { bad++; continue; }
       const { data: city } = await supabase.from("cities").upsert({ name: cityName }, { onConflict: "name" }).select().single();
       if (!city) { bad++; continue; }
       const { data: dist } = await supabase.from("districts").upsert({ name: distName, city_id: city.id }, { onConflict: "city_id,name" }).select().single();
       if (!dist) { bad++; continue; }
+      let parentId: string | null = null;
+      if (parentName) {
+        const { data: pp } = await supabase.from("places").select("id").eq("name", parentName).maybeSingle();
+        parentId = pp?.id || null;
+      }
       const { error } = await supabase.from("places").upsert(
-        { name: placeName, lat, lng, district_id: dist.id }, { onConflict: "name" });
+        { name: placeName, lat, lng, district_id: dist.id, parent_place_id: parentId }, { onConflict: "name" });
       if (error) bad++; else ok++;
     }
     setBusy(false);
@@ -327,7 +335,7 @@ export default function AdminPlaces() {
     <section className="panel">
       <div className="panelHead">
         <h2>تسهيلات الاستخدام</h2>
-        <p>المدن ← الأحياء ← الشوارع والعلامات، ثم المشاوير بأسعارها الثابتة</p>
+        <p>المدن ← الأحياء ← الشوارع والعلامات (ويمكن ربط أي مكان بمكان أب مثل: صيدلية داخل شارع)، ثم المشاوير بأسعارها الثابتة</p>
       </div>
 
       <div className="adminTabs">
@@ -393,9 +401,10 @@ export default function AdminPlaces() {
         <>
           <div className="apTools">
             <button className="offerPlus" onClick={() => downloadCsv("قالب-الاماكن.csv", [
-              ["المدينة", "الحي", "اسم المكان", "خط العرض lat", "خط الطول lng"],
-              ["بنها", "وسط البلد", "محطة قطار بنها", "30.4597", "31.1886"],
-              ["بنها", "كفر الجزار", "جامعة بنها", "30.4660", "31.1833"],
+              ["المدينة", "الحي", "اسم المكان", "خط العرض lat", "خط الطول lng", "تابع لمكان (اختياري)"],
+              ["بنها", "الفلل", "الفلل شارع 5", "30.4597", "31.1886", ""],
+              ["بنها", "الفلل", "مسجد النور", "30.4600", "31.1890", "الفلل شارع 5"],
+              ["بنها", "الفلل", "صيدلية الشفاء", "30.4602", "31.1892", "الفلل شارع 5"],
             ])}>⬇ تحميل قالب CSV</button>
             <button className="offerMain" onClick={() => placesFileRef.current?.click()} disabled={busy}>
               {busy ? "جارٍ الاستيراد..." : "⬆ استيراد الأماكن من CSV"}
@@ -408,19 +417,29 @@ export default function AdminPlaces() {
               <option value="">اختر الحي...</option>
               {districts.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.cities?.name || ""}</option>)}
             </select>
-            <input value={placeName} placeholder="اسم الشارع أو العلامة" onChange={(e) => setPlaceName(e.target.value)} />
+            <input value={placeName} placeholder="اسم الشارع أو العلامة أو المحل — مثال: مسجد النور" onChange={(e) => setPlaceName(e.target.value)} />
+            <select value={placeParent} onChange={(e) => setPlaceParent(e.target.value)}>
+              <option value="">تابع لمكان؟ (اختياري — مثال: شارع)</option>
+              {places.filter((p) => p.id !== editPlace?.id).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.districts?.name ? ` — ${p.districts.name}` : ""}</option>
+              ))}
+            </select>
             <input value={placeCoords} placeholder="الإحداثيات — الصق من خرائط جوجل: 30.4706813, 31.1844191"
               style={{ direction: "ltr", textAlign: "left" }}
               onChange={(e) => setPlaceCoords(e.target.value)} />
             <button className="authSubmit" onClick={savePlace} disabled={busy}>{editPlace ? "حفظ التعديل" : "إضافة"}</button>
-            {editPlace && <button className="wizBack" onClick={() => { setEditPlace(null); setPlaceName(""); setPlaceCoords(""); }}>إلغاء</button>}
+            {editPlace && <button className="wizBack" onClick={() => { setEditPlace(null); setPlaceName(""); setPlaceCoords(""); setPlaceParent(""); }}>إلغاء</button>}
           </div>
           <div className="apList">
             {places.map((p) => (
               <div className="apRow" key={p.id}>
                 <b>{p.name}</b>
-                <span className="apMeta">{p.districts?.name ? `${p.districts.name} — ` : ""}{p.districts?.cities?.name || "بدون حي"}</span>
-                <button onClick={() => { setEditPlace(p); setPlaceName(p.name); setPlaceCoords(`${p.lat}, ${p.lng}`); setPlaceDist(p.district_id || ""); }}>تعديل</button>
+                <span className="apMeta">
+                  {p.parent?.name ? `تابع لـ ${p.parent.name} — ` : ""}
+                  {p.districts?.name ? `${p.districts.name} — ` : ""}{p.districts?.cities?.name || "بدون حي"}
+                  {places.filter((s) => s.parent_place_id === p.id).length > 0 && ` · ${places.filter((s) => s.parent_place_id === p.id).length} مكان تابع`}
+                </span>
+                <button onClick={() => { setEditPlace(p); setPlaceName(p.name); setPlaceCoords(`${p.lat}, ${p.lng}`); setPlaceDist(p.district_id || ""); setPlaceParent(p.parent_place_id || ""); }}>تعديل</button>
                 <button className="apDel" onClick={() => delPlace(p)}>حذف</button>
               </div>
             ))}
