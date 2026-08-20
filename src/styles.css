@@ -4,6 +4,7 @@
   --danger:#e2564a; --accent:#3b82f6; --radius:12px;
 }
 *{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
 body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:var(--navy);color:var(--ink)}
 input,button{font-family:inherit}
 
@@ -105,8 +106,8 @@ input,button{font-family:inherit}
 .emptyState{color:var(--muted);font-size:13px;text-align:center;padding:16px}
 
 /* admin */
-.adminTabs{display:flex;gap:8px;margin-bottom:4px}
-.adminTabs button{padding:9px 16px;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:9px;cursor:pointer;font-size:14px}
+.adminTabs{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.adminTabs button{padding:9px 14px;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:9px;cursor:pointer;font-size:13px}
 .adminTabs button.on{border-color:var(--green);color:var(--ink)}
 .metricsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .metric{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
