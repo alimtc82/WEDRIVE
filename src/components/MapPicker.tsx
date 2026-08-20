@@ -35,6 +35,18 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
+// يتعرّف على إحداثيات ملصوقة من خرائط جوجل بأي صيغة شائعة:
+// "30.4706813, 31.1844191" أو "(30.4706813, 31.1844191)" أو "@30.4706813,31.1844191"
+function parseCoordsInput(text: string): LatLng | null {
+  const m = text.match(/(-?\d{1,2}\.\d+)\s*[,،]\s*(-?\d{1,3}\.\d+)/);
+  if (!m) return null;
+  const lat = parseFloat(m[1]);
+  const lng = parseFloat(m[2]);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+
 export default function MapPicker({ label, color, value, address, autoLocate, onChange, onPlaceSelect }: Props) {
   const [open, setOpen] = useState(false);
   return (
@@ -60,6 +72,7 @@ function MapPanel({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ name: string; loc: LatLng }[]>([]);
   const [localPlaces, setLocalPlaces] = useState<KnownPlace[]>([]);
+  const [coordPick, setCoordPick] = useState<LatLng | null>(null);
   const [searching, setSearching] = useState(false);
 
   const setMarker = useCallback((loc: LatLng) => {
@@ -134,10 +147,15 @@ function MapPanel({
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
   }, [value, autoLocate, setMarker, onChange, onPlaceSelect]);
 
+  // التعرّف على إحداثيات ملصوقة من خرائط جوجل أثناء الكتابة
+  useEffect(() => {
+    setCoordPick(parseCoordsInput(query));
+  }, [query]);
+
   // تلميحات الأماكن المعروفة أثناء الكتابة — بحث عربي متسامح (يظهر من أول حرف)
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 1) { setLocalPlaces([]); return; }
+    if (q.length < 1 || parseCoordsInput(q)) { setLocalPlaces([]); return; }
     const t = setTimeout(async () => {
       const { data } = await supabase.rpc("search_places", { p_query: q });
       setLocalPlaces((data as KnownPlace[]) || []);
@@ -148,6 +166,9 @@ function MapPanel({
   // البحث عبر Nominatim
   const runSearch = async () => {
     if (!query.trim()) return;
+    // لو المدخل إحداثيات، طبّقها مباشرة بدل البحث النصي
+    const coords = parseCoordsInput(query);
+    if (coords) { pickCoords(coords); return; }
     setSearching(true);
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=eg&limit=5&q=${encodeURIComponent(query)}`;
@@ -164,6 +185,18 @@ function MapPanel({
     } finally {
       setSearching(false);
     }
+  };
+
+  // تثبيت الدبوس على إحداثيات ملصوقة + جلب اسم المكان تلقائيًا
+  const pickCoords = (loc: LatLng) => {
+    mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 16 });
+    setMarker(loc);
+    reverseGeocode(loc).then((addr) => onChange(loc, addr));
+    onPlaceSelect?.(null);
+    setCoordPick(null);
+    setLocalPlaces([]);
+    setResults([]);
+    setQuery(`${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`);
   };
 
   // اختيار مكان معروف من التلميحات
@@ -191,13 +224,21 @@ function MapPanel({
   return (
     <div className="pickerMap">
       <div className="searchRow">
-        <input className="pickerSearch" value={query} placeholder="ابحث عن مكان..."
+        <input className="pickerSearch" value={query} placeholder="ابحث أو الصق إحداثيات من خرائط جوجل..."
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runSearch(); } }} />
         <button type="button" className="searchBtn" onClick={runSearch} disabled={searching}>
           {searching ? "..." : "بحث"}
         </button>
       </div>
+      {coordPick && (
+        <ul className="searchResults localPlaces">
+          <li onClick={() => pickCoords(coordPick)}>
+            <span className="lpName">📍 {coordPick.lat.toFixed(6)}, {coordPick.lng.toFixed(6)}</span>
+            <small className="lpCtx">تحديد هذه الإحداثيات على الخريطة</small>
+          </li>
+        </ul>
+      )}
       {localPlaces.length > 0 && (
         <ul className="searchResults localPlaces">
           {localPlaces.map((p) => (
