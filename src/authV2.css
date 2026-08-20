@@ -5,7 +5,7 @@
 .avGlow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.32;pointer-events:none}
 .avGlow.g1{width:420px;height:420px;background:#1fbf8f;top:-140px;inset-inline-start:-120px}
 .avGlow.g2{width:380px;height:380px;background:#3b82f6;bottom:8%;inset-inline-end:-140px}
-.avInner{position:relative;flex:1;display:flex;flex-direction:column;width:100%;max-width:430px;margin:0 auto;padding:26px 20px 18px}
+.avInner{position:relative;flex:1;display:flex;flex-direction:column;width:100%;max-width:430px;margin:0 auto;padding:calc(26px + env(safe-area-inset-top,0px)) 20px calc(18px + env(safe-area-inset-bottom,0px))}
 
 /* الهيرو */
 .avHero{text-align:center;padding:14px 0 20px}
