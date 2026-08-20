@@ -45,6 +45,18 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(a.href);
 }
 
+// يقبل إحداثيات ملصوقة من خرائط جوجل بأي صيغة:
+// "30.4706813, 31.1844191" أو "(30.4706813, 31.1844191)" أو "@30.4706813,31.1844191"
+function parseCoordsInput(text: string): { lat: number; lng: number } | null {
+  const m = text.match(/(-?\d{1,2}\.\d+)\s*[,،]\s*(-?\d{1,3}\.\d+)/);
+  if (!m) return null;
+  const lat = parseFloat(m[1]);
+  const lng = parseFloat(m[2]);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+
 /* تلوين الجزء المطابق من النص أثناء البحث الذكي */
 function Hi({ text, q }: { text: string; q: string }) {
   if (!q) return <>{text}</>;
@@ -130,8 +142,7 @@ export default function AdminPlaces() {
   const [editDist, setEditDist] = useState<District | null>(null);
   const [placeName, setPlaceName] = useState("");
   const [placeDist, setPlaceDist] = useState("");
-  const [placeLat, setPlaceLat] = useState("");
-  const [placeLng, setPlaceLng] = useState("");
+  const [placeCoords, setPlaceCoords] = useState("");
   const [editPlace, setEditPlace] = useState<Place | null>(null);
   const [routeName, setRouteName] = useState("");
   const [routeFrom, setRouteFrom] = useState<Place | null>(null);
@@ -213,18 +224,18 @@ export default function AdminPlaces() {
   /* ===== الشوارع والعلامات ===== */
   const savePlace = async () => {
     const name = placeName.trim();
-    const lat = parseFloat(placeLat), lng = parseFloat(placeLng);
+    const coords = parseCoordsInput(placeCoords);
     if (!name || !placeDist) { fail("اكتب الاسم واختر الحي"); return; }
-    if (Number.isNaN(lat) || Number.isNaN(lng)) { fail("أدخل إحداثيات صحيحة (خط العرض وخط الطول)"); return; }
+    if (!coords) { fail("أدخل الإحداثيات بصيغة خرائط جوجل — مثال: 30.4706813, 31.1844191"); return; }
     setBusy(true);
-    const payload = { name, lat, lng, district_id: placeDist };
+    const payload = { name, lat: coords.lat, lng: coords.lng, district_id: placeDist };
     const { error } = editPlace
       ? await supabase.from("places").update(payload).eq("id", editPlace.id)
       : await supabase.from("places").insert(payload);
     setBusy(false);
     if (error) { fail("تعذّر الحفظ: " + error.message); return; }
     flash(editPlace ? "تم تعديل المكان ✓" : "تمت إضافة المكان ✓");
-    setPlaceName(""); setPlaceLat(""); setPlaceLng(""); setEditPlace(null); loadPlaces();
+    setPlaceName(""); setPlaceCoords(""); setEditPlace(null); loadPlaces();
   };
   const delPlace = async (p: Place) => {
     if (!window.confirm(`حذف «${p.name}»؟ المشاوير المرتبطة به ستُحذف أيضًا.`)) return;
@@ -398,17 +409,18 @@ export default function AdminPlaces() {
               {districts.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.cities?.name || ""}</option>)}
             </select>
             <input value={placeName} placeholder="اسم الشارع أو العلامة" onChange={(e) => setPlaceName(e.target.value)} />
-            <input value={placeLat} placeholder="خط العرض lat — 30.4597" inputMode="decimal" onChange={(e) => setPlaceLat(e.target.value)} />
-            <input value={placeLng} placeholder="خط الطول lng — 31.1886" inputMode="decimal" onChange={(e) => setPlaceLng(e.target.value)} />
+            <input value={placeCoords} placeholder="الإحداثيات — الصق من خرائط جوجل: 30.4706813, 31.1844191"
+              style={{ direction: "ltr", textAlign: "left" }}
+              onChange={(e) => setPlaceCoords(e.target.value)} />
             <button className="authSubmit" onClick={savePlace} disabled={busy}>{editPlace ? "حفظ التعديل" : "إضافة"}</button>
-            {editPlace && <button className="wizBack" onClick={() => { setEditPlace(null); setPlaceName(""); setPlaceLat(""); setPlaceLng(""); }}>إلغاء</button>}
+            {editPlace && <button className="wizBack" onClick={() => { setEditPlace(null); setPlaceName(""); setPlaceCoords(""); }}>إلغاء</button>}
           </div>
           <div className="apList">
             {places.map((p) => (
               <div className="apRow" key={p.id}>
                 <b>{p.name}</b>
                 <span className="apMeta">{p.districts?.name ? `${p.districts.name} — ` : ""}{p.districts?.cities?.name || "بدون حي"}</span>
-                <button onClick={() => { setEditPlace(p); setPlaceName(p.name); setPlaceLat(String(p.lat)); setPlaceLng(String(p.lng)); setPlaceDist(p.district_id || ""); }}>تعديل</button>
+                <button onClick={() => { setEditPlace(p); setPlaceName(p.name); setPlaceCoords(`${p.lat}, ${p.lng}`); setPlaceDist(p.district_id || ""); }}>تعديل</button>
                 <button className="apDel" onClick={() => delPlace(p)}>حذف</button>
               </div>
             ))}
