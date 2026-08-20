@@ -153,6 +153,10 @@ export default function AdminPlaces() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // مفتاح إظهار قائمة المشاوير الثابتة للعميل
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [showFixedRoutes, setShowFixedRoutes] = useState(true);
+
   // نماذج الإدخال — المدن والأحياء
   const [cityName, setCityName] = useState("");
   const [editCity, setEditCity] = useState<City | null>(null);
@@ -210,12 +214,23 @@ export default function AdminPlaces() {
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadCities(), loadDistricts(), loadPlaces(), loadRoutes()]);
+    const { data: s } = await supabase.from("settings").select("id,show_fixed_routes").single();
+    if (s) { setSettingsId(s.id); setShowFixedRoutes(s.show_fixed_routes !== false); }
   }, [loadCities, loadDistricts, loadPlaces, loadRoutes]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const flash = (m: string) => { setMsg(m); setErr(""); setTimeout(() => setMsg(""), 4000); };
   const fail = (m: string) => { setErr(m); setMsg(""); };
+
+  // مفتاح إظهار/إخفاء قائمة المشاوير الثابتة عند العميل
+  const toggleFixedRoutes = async (on: boolean) => {
+    setShowFixedRoutes(on);
+    if (!settingsId) return;
+    const { error } = await supabase.from("settings").update({ show_fixed_routes: on }).eq("id", settingsId);
+    if (error) { fail("تعذّر حفظ الإعداد: " + error.message); setShowFixedRoutes(!on); return; }
+    flash(on ? "قائمة المشاوير الثابتة ظاهرة الآن للعميل ✓" : "تم إخفاء قائمة المشاوير الثابتة عن العميل ✓");
+  };
 
   /* ===== المدن ===== */
   const saveCity = async () => {
@@ -632,6 +647,18 @@ export default function AdminPlaces() {
       {/* ===== المشاوير — شاشة القائمة ===== */}
       {sub === "routes" && routesView === "list" && (
         <>
+          {/* مفتاح إظهار/إخفاء القائمة عند العميل */}
+          <div className="apToggle">
+            <div>
+              <b>إظهار قائمة «مشاوير بأسعار ثابتة» في شاشة العميل</b>
+              <small>عند الإخفاء يبقى السعر الثابت مطبقًا تلقائيًا، لكن القائمة الجاهزة لا تظهر</small>
+            </div>
+            <label className="switch">
+              <input type="checkbox" checked={showFixedRoutes} onChange={(e) => toggleFixedRoutes(e.target.checked)} />
+              <span className="track" />
+            </label>
+          </div>
+
           <div className="apTools">
             <button className="authSubmit" onClick={openNewRoute}>＋ إضافة مشوار جديد</button>
             <button className="offerPlus" onClick={() => downloadCsv("قالب-المشاوير.csv", [
