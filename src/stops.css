@@ -1,0 +1,14 @@
+/* ===== نقاط التوقف (v1.11.0) ===== */
+
+/* نقطة التوقف — لون كهرماني مميز بين الأخضر (انطلاق) والأحمر (وجهة) */
+.dotStop{background:#f5b73d}
+.mapPin.amber{background:#f5b73d}
+.tripDot.stop{background:#f5b73d;width:14px;height:14px}
+
+/* زر إضافة نقطة توقف في شاشة طلب الرحلة */
+.addStopBtn{width:100%;padding:10px;background:var(--navy);border:1px dashed var(--line);color:var(--muted);border-radius:9px;cursor:pointer;font-size:13px;margin-bottom:12px}
+.addStopBtn:hover{border-color:var(--green);color:var(--ink)}
+
+/* زر إزالة نقطة توقف */
+.stopRow{position:relative}
+.stopRemove{display:block;margin:-6px 0 12px auto;background:transparent;border:0;color:var(--danger);font-size:12px;cursor:pointer;padding:4px 0;font-family:inherit}

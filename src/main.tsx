@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AuthProvider } from "./lib/AuthContext";
 import RoleRouter from "./RoleRouter";
 import "./styles.css";
+import "./stops.css";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
