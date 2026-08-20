@@ -6,6 +6,7 @@ import { carMarkerSvg } from "../lib/carMarker";
 import { fetchRoute, type Coord } from "../lib/routing";
 
 interface Props { tripId: string; status: string; }
+interface Stop { lat: number; lng: number; address?: string; }
 interface MapData {
   status: string;
   pickup: { lat: number; lng: number };
@@ -24,7 +25,7 @@ const DONE_COLOR = "#9aa3c0";   // الجزء المقطوع (باهت)
 const NEXT_PICKUP = "#3b82f6";  // المتبقي: الكابتن في الطريق للعميل
 const NEXT_TRIP = "#1fbf8f";    // المتبقي: الرحلة الجارية
 
-function pinEl(kind: "captain" | "from" | "to"): HTMLDivElement {
+function pinEl(kind: "captain" | "from" | "to" | "stop"): HTMLDivElement {
   const el = document.createElement("div");
   if (kind === "captain") {
     el.className = "carMarker";
@@ -53,13 +54,14 @@ function nearestIndex(route: Coord[], pos: Coord): number {
 export default function TripMap({ tripId, status }: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const markers = useRef<{ captain?: maplibregl.Marker; from?: maplibregl.Marker; to?: maplibregl.Marker }>({});
+  const markers = useRef<{ captain?: maplibregl.Marker; from?: maplibregl.Marker; to?: maplibregl.Marker; stops: maplibregl.Marker[] }>({ stops: [] });
+  const stopsRef = useRef<Stop[]>([]);
   const routeCache = useRef<Record<string, Coord[]>>({});
   // نقطة بداية المسار لكل مرحلة — تُثبَّت عند أول قراءة حتى لا يتحرك "بداية المقطوع" مع الكابتن
   const anchors = useRef<Record<string, Coord>>({});
   const [ready, setReady] = useState(false);
 
-  // قبل بدء الرحلة: المسار كابتن → نقطة العميل. بعد البدء: انطلاق → وجهة
+  // قبل بدء الرحلة: المسار كابتن → نقطة العميل. بعد البدء: انطلاق ← توقفات ← وجهة
   const beforeStart = status === "accepted" || status === "arrived";
   const phase = beforeStart ? "pickup" : "trip";
 
@@ -96,18 +98,22 @@ export default function TripMap({ tripId, status }: Props) {
     const to: Coord = [d.dropoff.lng, d.dropoff.lat];
     const cap: Coord | null = d.captain ? [d.captain.lng, d.captain.lat] : null;
 
-    let anchor: Coord, end: Coord;
+    let anchor: Coord, waypoints: Coord[];
     if (beforeStart) {
       if (!cap) return; // لا موقع للكابتن بعد
       if (!anchors.current.pickup) anchors.current.pickup = cap; // تثبيت البداية لحظة القبول
-      anchor = anchors.current.pickup; end = from;
+      anchor = anchors.current.pickup;
+      waypoints = [anchor, from];
     } else {
-      anchor = from; end = to;
+      anchor = from;
+      // المسار يمر بكل نقاط التوقف بالترتيب قبل الوجهة النهائية
+      const stopCoords: Coord[] = stopsRef.current.map((s) => [s.lng, s.lat]);
+      waypoints = [anchor, ...stopCoords, to];
     }
 
     let route = routeCache.current[phase];
     if (!route) {
-      route = await fetchRoute(anchor, end);
+      route = await fetchRoute(waypoints);
       routeCache.current[phase] = route;
     }
     paintProgress(route, cap);
@@ -120,6 +126,16 @@ export default function TripMap({ tripId, status }: Props) {
 
     if (!markers.current.from) markers.current.from = new maplibregl.Marker({ element: pinEl("from") }).setLngLat(from).addTo(map);
     if (!markers.current.to) markers.current.to = new maplibregl.Marker({ element: pinEl("to") }).setLngLat(to).addTo(map);
+
+    // علامات نقاط التوقف (أصفر)
+    const st = stopsRef.current;
+    while (markers.current.stops.length < st.length) {
+      markers.current.stops.push(new maplibregl.Marker({ element: pinEl("stop") }));
+    }
+    markers.current.stops.forEach((m, i) => {
+      if (i < st.length) m.setLngLat([st[i].lng, st[i].lat]).addTo(map);
+      else m.remove();
+    });
 
     const cap = d.captain;
     if (cap) {
@@ -141,8 +157,14 @@ export default function TripMap({ tripId, status }: Props) {
   }, [beforeStart, drawRoute]);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.rpc("trip_map_data", { p_trip_id: tripId });
-    if (data) update(data as MapData);
+    const [mapRes, tripRes] = await Promise.all([
+      supabase.rpc("trip_map_data", { p_trip_id: tripId }),
+      supabase.from("trips").select("stops").eq("id", tripId).single(),
+    ]);
+    if (tripRes.data && Array.isArray(tripRes.data.stops)) {
+      stopsRef.current = tripRes.data.stops as Stop[];
+    }
+    if (mapRes.data) update(mapRes.data as MapData);
   }, [tripId, update]);
 
   useEffect(() => {
@@ -159,7 +181,7 @@ export default function TripMap({ tripId, status }: Props) {
       .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => load())
       .subscribe();
 
-    return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markers.current = {}; };
+    return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markers.current = { stops: [] }; };
   }, [tripId, load]);
 
   useEffect(() => { if (ready) load(); }, [status, ready, load]);

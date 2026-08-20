@@ -1,15 +1,17 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
-// يجلب مسار الطريق الحقيقي بين نقطتين من OSRM (مجاني)
-// مع تحويل للخط المستقيم تلقائيًا لو فشل الطلب أو انتهت المهلة
+// يجلب مسار الطريق الحقيقي عبر عدة نقاط (انطلاق ← توقفات ← وجهة) من OSRM (مجاني)
+// مع تحويل لخطوط مستقيمة بين النقاط تلقائيًا لو فشل الطلب أو انتهت المهلة
 // على iOS يستخدم CapacitorHttp (طلب native) لتجاوز قيود WebView التي كانت تمنع ظهور المسار
 export type Coord = [number, number]; // [lng, lat]
 
-export async function fetchRoute(from: Coord, to: Coord): Promise<Coord[]> {
-  const straight: Coord[] = [from, to];
+export async function fetchRoute(points: Coord[]): Promise<Coord[]> {
+  if (points.length < 2) return points;
+  const straight: Coord[] = points;
+  const path = points.map((p) => `${p[0]},${p[1]}`).join(";");
   const url =
     `https://router.project-osrm.org/route/v1/driving/` +
-    `${from[0]},${from[1]};${to[0]},${to[1]}` +
+    path +
     `?overview=full&geometries=geojson`;
   try {
     let coords: unknown;

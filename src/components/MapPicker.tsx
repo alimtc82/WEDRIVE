@@ -3,9 +3,11 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { LatLng } from "../lib/geo";
 
+type PinColor = "green" | "red" | "amber";
+
 interface Props {
   label: string;
-  color: "green" | "red";
+  color: PinColor;
   value: LatLng | null;
   address: string;
   autoLocate?: boolean;
@@ -34,7 +36,7 @@ export default function MapPicker({ label, color, value, address, autoLocate, on
     <div className="mapPicker">
       <label>{label}</label>
       <button type="button" className="pickerField" onClick={() => setOpen((o) => !o)}>
-        <i className={color === "green" ? "dotFrom" : "dotTo"} />
+        <i className={color === "green" ? "dotFrom" : color === "amber" ? "dotStop" : "dotTo"} />
         <span>{address || "اضغط للاختيار على الخريطة"}</span>
       </button>
       {open && (
@@ -46,7 +48,7 @@ export default function MapPicker({ label, color, value, address, autoLocate, on
 
 function MapPanel({
   color, value, autoLocate, onChange, onClose,
-}: { color: "green" | "red"; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onClose: () => void; }) {
+}: { color: PinColor; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onClose: () => void; }) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
