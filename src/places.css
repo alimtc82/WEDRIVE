@@ -9,12 +9,17 @@
 /* شارة السعر الثابت في صندوق الأجرة */
 .fixedFareTag{display:inline-block;font-size:11px;font-weight:700;color:#04241c;background:var(--green);padding:3px 10px;border-radius:12px;margin-top:4px}
 
-/* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.14.1) ===== */
+/* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.14.2) ===== */
 
 /* حماية عامة من الطفح خارج التصميم */
 .panel,.panel *{box-sizing:border-box}
 .panel input,.panel select,.panel button{max-width:100%}
 .panel select{min-width:0}
+
+/* أزرار الأقسام — شبكة منظمة بدل التبعثر */
+.adminTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.adminTabs button{padding:11px 6px;font-size:13px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:420px){.adminTabs{grid-template-columns:repeat(2,1fr)}}
 
 /* نماذج الإضافة والتعديل */
 .apForm{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
@@ -26,6 +31,7 @@
 .apFormGrid .authSubmit{grid-column:1/-1}
 .apFormRoutes{margin-bottom:14px}
 .apFormRoutes .authSubmit{margin-top:4px;width:100%}
+.apFormRoutes .field select{width:100%;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
 .apFormHead{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .apFormHead h3{margin:0;font-size:16px;color:var(--ink);flex:1;min-width:0}
 .apFormHead .wizBack{flex:none;padding:9px 14px;font-size:13px}

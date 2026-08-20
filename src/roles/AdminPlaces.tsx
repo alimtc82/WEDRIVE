@@ -17,9 +17,9 @@ interface RouteRow {
 }
 
 type Sub = "cities" | "districts" | "places" | "routes";
-type RoutesView = "list" | "form";
+type View = "list" | "form";
 
-const ROUTES_PER_PAGE = 20;
+const PER_PAGE = 20;
 
 /* ===== أدوات CSV ===== */
 function parseCsv(text: string): string[][] {
@@ -68,6 +68,20 @@ function Hi({ text, q }: { text: string; q: string }) {
   const i = text.indexOf(q);
   if (i < 0) return <>{text}</>;
   return <>{text.slice(0, i)}<mark className="hl">{text.slice(i, i + q.length)}</mark>{text.slice(i + q.length)}</>;
+}
+
+/* شريط ترقيم الصفحات */
+function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (n: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="apPager">
+      <button disabled={page <= 1} onClick={() => onPage(page - 1)}>السابق</button>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+        <button key={n} className={n === page ? "on" : ""} onClick={() => onPage(n)}>{n}</button>
+      ))}
+      <button disabled={page >= totalPages} onClick={() => onPage(page + 1)}>التالي</button>
+    </div>
+  );
 }
 
 /* ===== حقل بحث ذكي بمكان محفوظ (للمشاوير) ===== */
@@ -139,20 +153,27 @@ export default function AdminPlaces() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // نماذج الإدخال
+  // نماذج الإدخال — المدن والأحياء
   const [cityName, setCityName] = useState("");
   const [editCity, setEditCity] = useState<City | null>(null);
   const [distName, setDistName] = useState("");
   const [distCity, setDistCity] = useState("");
   const [editDist, setEditDist] = useState<District | null>(null);
+
+  // الشوارع والعلامات: قائمة/نموذج + فلاتر وترقيم
+  const [placesView, setPlacesView] = useState<View>("list");
+  const [placePage, setPlacePage] = useState(1);
+  const [pCity, setPCity] = useState("");
+  const [pDist, setPDist] = useState("");
+  const [pParent, setPParent] = useState("");
   const [placeName, setPlaceName] = useState("");
   const [placeDist, setPlaceDist] = useState("");
   const [placeParent, setPlaceParent] = useState("");
   const [placeCoords, setPlaceCoords] = useState("");
   const [editPlace, setEditPlace] = useState<Place | null>(null);
 
-  // المشاوير: عرض القائمة أو شاشة الإدخال + الفلاتر والترقيم
-  const [routesView, setRoutesView] = useState<RoutesView>("list");
+  // المشاوير: قائمة/نموذج + فلاتر وترقيم
+  const [routesView, setRoutesView] = useState<View>("list");
   const [routePage, setRoutePage] = useState(1);
   const [fCity, setFCity] = useState("");
   const [fDist, setFDist] = useState("");
@@ -235,6 +256,15 @@ export default function AdminPlaces() {
   };
 
   /* ===== الشوارع والعلامات ===== */
+  const resetPlaceForm = () => {
+    setPlaceName(""); setPlaceCoords(""); setPlaceParent(""); setEditPlace(null);
+  };
+  const openNewPlace = () => { resetPlaceForm(); setPlacesView("form"); };
+  const openEditPlace = (p: Place) => {
+    setEditPlace(p); setPlaceName(p.name); setPlaceCoords(`${p.lat}, ${p.lng}`);
+    setPlaceDist(p.district_id || ""); setPlaceParent(p.parent_place_id || "");
+    setPlacesView("form");
+  };
   const savePlace = async () => {
     const name = placeName.trim();
     const coords = parseCoordsInput(placeCoords);
@@ -248,7 +278,9 @@ export default function AdminPlaces() {
     setBusy(false);
     if (error) { fail("تعذّر الحفظ: " + error.message); return; }
     flash(editPlace ? "تم تعديل المكان ✓" : "تمت إضافة المكان ✓");
-    setPlaceName(""); setPlaceCoords(""); setPlaceParent(""); setEditPlace(null); loadPlaces();
+    resetPlaceForm();
+    setPlacesView("list");
+    loadPlaces();
   };
   const delPlace = async (p: Place) => {
     if (!window.confirm(`حذف «${p.name}»؟ المشاوير المرتبطة به ستُحذف والأماكن التابعة له ستفقد ارتباطها.`)) return;
@@ -256,6 +288,22 @@ export default function AdminPlaces() {
     if (error) { fail("تعذّر الحذف: " + error.message); return; }
     flash("تم حذف المكان ✓"); loadPlaces(); loadRoutes();
   };
+
+  // فلترة الأماكن: المدينة / الحي / التابع لمكان
+  const filteredPlaces = places.filter((p) => {
+    if (pParent && p.parent_place_id !== pParent) return false;
+    if (pDist && p.district_id !== pDist) return false;
+    if (pCity && !pDist) {
+      const d = districts.find((x) => x.id === p.district_id);
+      if (d?.city_id !== pCity) return false;
+    }
+    return true;
+  });
+  const placesPages = Math.max(1, Math.ceil(filteredPlaces.length / PER_PAGE));
+  const placePg = Math.min(placePage, placesPages);
+  const pagedPlaces = filteredPlaces.slice((placePg - 1) * PER_PAGE, placePg * PER_PAGE);
+  const placeFilterDistricts = pCity ? districts.filter((d) => d.city_id === pCity) : districts;
+  const parentFilterPlaces = pDist ? places.filter((p) => p.district_id === pDist) : places;
 
   /* ===== المشاوير ===== */
   const resetRouteForm = () => {
@@ -317,9 +365,9 @@ export default function AdminPlaces() {
     }
     return true;
   });
-  const totalPages = Math.max(1, Math.ceil(filteredRoutes.length / ROUTES_PER_PAGE));
-  const page = Math.min(routePage, totalPages);
-  const pagedRoutes = filteredRoutes.slice((page - 1) * ROUTES_PER_PAGE, page * ROUTES_PER_PAGE);
+  const routesPages = Math.max(1, Math.ceil(filteredRoutes.length / PER_PAGE));
+  const routePg = Math.min(routePage, routesPages);
+  const pagedRoutes = filteredRoutes.slice((routePg - 1) * PER_PAGE, routePg * PER_PAGE);
   const filterDistricts = fCity ? districts.filter((d) => d.city_id === fCity) : districts;
   const filterPlaces = fDist ? places.filter((p) => p.district_id === fDist) : places;
 
@@ -388,7 +436,7 @@ export default function AdminPlaces() {
       <div className="adminTabs">
         <button className={sub === "cities" ? "on" : ""} onClick={() => setSub("cities")}>المدن</button>
         <button className={sub === "districts" ? "on" : ""} onClick={() => setSub("districts")}>الأحياء</button>
-        <button className={sub === "places" ? "on" : ""} onClick={() => setSub("places")}>الشوارع والعلامات</button>
+        <button className={sub === "places" ? "on" : ""} onClick={() => { setSub("places"); setPlacesView("list"); }}>الشوارع والعلامات</button>
         <button className={sub === "routes" ? "on" : ""} onClick={() => { setSub("routes"); setRoutesView("list"); }}>المشاوير</button>
       </div>
 
@@ -451,10 +499,48 @@ export default function AdminPlaces() {
         </>
       )}
 
-      {/* ===== الشوارع والعلامات ===== */}
-      {sub === "places" && (
+      {/* ===== الشوارع والعلامات — شاشة الإدخال ===== */}
+      {sub === "places" && placesView === "form" && (
+        <div className="apFormRoutes">
+          <div className="apFormHead">
+            <button className="wizBack" onClick={() => { resetPlaceForm(); setPlacesView("list"); }}>→ رجوع لقائمة الأماكن</button>
+            <h3>{editPlace ? "تعديل مكان" : "إضافة مكان جديد"}</h3>
+          </div>
+          <div className="field">
+            <label>الحي</label>
+            <select value={placeDist} onChange={(e) => setPlaceDist(e.target.value)}>
+              <option value="">اختر الحي...</option>
+              {districts.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.cities?.name || ""}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>اسم الشارع أو العلامة أو المحل</label>
+            <input value={placeName} placeholder="مثال: مسجد النور" onChange={(e) => setPlaceName(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>تابع لمكان؟ (اختياري — مثال: شارع)</label>
+            <select value={placeParent} onChange={(e) => setPlaceParent(e.target.value)}>
+              <option value="">بدون — مكان رئيسي</option>
+              {places.filter((p) => p.id !== editPlace?.id).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.districts?.name ? ` — ${p.districts.name}` : ""}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>الإحداثيات (الصق من خرائط جوجل)</label>
+            <input value={placeCoords} placeholder="30.4706813, 31.1844191"
+              style={{ direction: "ltr", textAlign: "left" }}
+              onChange={(e) => setPlaceCoords(e.target.value)} />
+          </div>
+          <button className="authSubmit" onClick={savePlace} disabled={busy}>{editPlace ? "حفظ التعديل" : "حفظ المكان"}</button>
+        </div>
+      )}
+
+      {/* ===== الشوارع والعلامات — شاشة القائمة ===== */}
+      {sub === "places" && placesView === "list" && (
         <>
           <div className="apTools">
+            <button className="authSubmit" onClick={openNewPlace}>＋ إضافة مكان جديد</button>
             <button className="offerPlus" onClick={() => downloadCsv("قالب-الاماكن.csv", [
               ["المدينة", "الحي", "اسم المكان", "خط العرض lat", "خط الطول lng", "تابع لمكان (اختياري)"],
               ["بنها", "الفلل", "الفلل شارع 5", "30.4597", "31.1886", ""],
@@ -467,26 +553,28 @@ export default function AdminPlaces() {
             <input ref={placesFileRef} type="file" accept=".csv" hidden
               onChange={(e) => { const f = e.target.files?.[0]; if (f) importPlacesCsv(f); e.target.value = ""; }} />
           </div>
-          <div className="apForm apFormGrid">
-            <select value={placeDist} onChange={(e) => setPlaceDist(e.target.value)}>
-              <option value="">اختر الحي...</option>
-              {districts.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.cities?.name || ""}</option>)}
+
+          {/* فلاتر التصفية */}
+          <div className="apFilters">
+            <select value={pCity} onChange={(e) => { setPCity(e.target.value); setPDist(""); setPParent(""); setPlacePage(1); }}>
+              <option value="">كل المدن</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <input value={placeName} placeholder="اسم الشارع أو العلامة أو المحل — مثال: مسجد النور" onChange={(e) => setPlaceName(e.target.value)} />
-            <select value={placeParent} onChange={(e) => setPlaceParent(e.target.value)}>
-              <option value="">تابع لمكان؟ (اختياري — مثال: شارع)</option>
-              {places.filter((p) => p.id !== editPlace?.id).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}{p.districts?.name ? ` — ${p.districts.name}` : ""}</option>
-              ))}
+            <select value={pDist} onChange={(e) => { setPDist(e.target.value); setPParent(""); setPlacePage(1); }}>
+              <option value="">كل الأحياء</option>
+              {placeFilterDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-            <input value={placeCoords} placeholder="الإحداثيات — الصق من خرائط جوجل: 30.4706813, 31.1844191"
-              style={{ direction: "ltr", textAlign: "left" }}
-              onChange={(e) => setPlaceCoords(e.target.value)} />
-            <button className="authSubmit" onClick={savePlace} disabled={busy}>{editPlace ? "حفظ التعديل" : "إضافة"}</button>
-            {editPlace && <button className="wizBack" onClick={() => { setEditPlace(null); setPlaceName(""); setPlaceCoords(""); setPlaceParent(""); }}>إلغاء</button>}
+            <select value={pParent} onChange={(e) => { setPParent(e.target.value); setPlacePage(1); }}>
+              <option value="">التابعة لمكان...</option>
+              {parentFilterPlaces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {(pCity || pDist || pParent) && (
+              <button className="wizBack" onClick={() => { setPCity(""); setPDist(""); setPParent(""); setPlacePage(1); }}>مسح الفلاتر</button>
+            )}
           </div>
+
           <div className="apList">
-            {places.map((p) => (
+            {pagedPlaces.map((p) => (
               <div className="apRow" key={p.id}>
                 <div className="apRowMain">
                   <b>{p.name}</b>
@@ -497,17 +585,20 @@ export default function AdminPlaces() {
                   </span>
                 </div>
                 <div className="apRowActions">
-                  <button onClick={() => { setEditPlace(p); setPlaceName(p.name); setPlaceCoords(`${p.lat}, ${p.lng}`); setPlaceDist(p.district_id || ""); setPlaceParent(p.parent_place_id || ""); }}>تعديل</button>
+                  <button onClick={() => openEditPlace(p)}>تعديل</button>
                   <button className="apDel" onClick={() => delPlace(p)}>حذف</button>
                 </div>
               </div>
             ))}
-            {places.length === 0 && <p className="emptyState">لا توجد أماكن بعد — أضِف حيًّا أولًا أو استورد CSV</p>}
+            {pagedPlaces.length === 0 && <p className="emptyState">لا توجد أماكن مطابقة — أضِف مكانًا جديدًا</p>}
           </div>
+
+          <Pager page={placePg} totalPages={placesPages} onPage={setPlacePage} />
+          <p className="apCount">إجمالي الأماكن: {filteredPlaces.length}{filteredPlaces.length !== places.length ? ` (من أصل ${places.length})` : ""}</p>
         </>
       )}
 
-      {/* ===== المشاوير ===== */}
+      {/* ===== المشاوير — شاشة الإدخال ===== */}
       {sub === "routes" && routesView === "form" && (
         <div className="apFormRoutes">
           <div className="apFormHead">
@@ -538,6 +629,7 @@ export default function AdminPlaces() {
         </div>
       )}
 
+      {/* ===== المشاوير — شاشة القائمة ===== */}
       {sub === "routes" && routesView === "list" && (
         <>
           <div className="apTools">
@@ -592,16 +684,7 @@ export default function AdminPlaces() {
             {pagedRoutes.length === 0 && <p className="emptyState">لا توجد مشاوير مطابقة — أضِف مشوارًا جديدًا</p>}
           </div>
 
-          {/* ترقيم الصفحات */}
-          {filteredRoutes.length > ROUTES_PER_PAGE && (
-            <div className="apPager">
-              <button disabled={page <= 1} onClick={() => setRoutePage(page - 1)}>السابق</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                <button key={n} className={n === page ? "on" : ""} onClick={() => setRoutePage(n)}>{n}</button>
-              ))}
-              <button disabled={page >= totalPages} onClick={() => setRoutePage(page + 1)}>التالي</button>
-            </div>
-          )}
+          <Pager page={routePg} totalPages={routesPages} onPage={setRoutePage} />
           <p className="apCount">إجمالي المشاوير: {filteredRoutes.length}{filteredRoutes.length !== routes.length ? ` (من أصل ${routes.length})` : ""}</p>
         </>
       )}
