@@ -48,6 +48,8 @@ input,button{font-family:inherit}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-right,0px)) 12px calc(18px + env(safe-area-inset-left,0px));background:var(--navy2);border-bottom:1px solid var(--line)}
 .topbarBrand{display:flex;align-items:center;gap:10px}
 .topbarUser{display:flex;align-items:center;gap:10px}
+.themeToggle{background:var(--navy);border:1px solid var(--line);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0}
+.themeToggle:hover{border-color:var(--green)}
 .uAvatar{width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.18);color:#9cc0ff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .uMeta b{display:block;font-size:13px}
 .uMeta span{font-size:11px;color:var(--muted)}
@@ -369,3 +371,34 @@ select option{background:var(--card);color:var(--ink)}
 .routeBanner{display:flex;justify-content:space-between;align-items:center;background:rgba(59,130,246,.12);border:1px solid #3b82f6;border-radius:9px;padding:8px 12px;margin-bottom:8px;font-size:13px}
 .routeBanner button{background:var(--navy);border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px}
 .mapTip{font-size:12px;color:var(--muted);margin:0 0 8px;text-align:center}
+
+/* ===== الثيم النهاري (الافتراضي — v1.16.0) ===== */
+/* نفس المتغيرات بألوان فاتحة — يُفعَّل عبر data-theme="light" على <html> */
+html[data-theme="light"]{
+  --navy:#f2f5fa; --navy2:#ffffff; --card:#ffffff; --line:#dde4ee;
+  --ink:#1c2740; --muted:#5b6b85; --green:#0f9d74; --green-d:#0b7a59;
+  --danger:#d64541; --accent:#2563eb;
+}
+html[data-theme="light"] .authWrap{background:radial-gradient(1200px 500px at 50% -10%,#e2edf8 0%,var(--navy) 60%)}
+html[data-theme="light"] .panel,
+html[data-theme="light"] .metric,
+html[data-theme="light"] .authCard,
+html[data-theme="light"] .inactiveCard{box-shadow:0 1px 4px rgba(28,39,64,.07)}
+html[data-theme="light"] .okMsg{color:#0b7a59;background:rgba(15,157,116,.1)}
+html[data-theme="light"] .authError{color:#b3261e;background:rgba(214,69,65,.1)}
+html[data-theme="light"] .hl{background:rgba(15,157,116,.22);color:#0b7a59}
+html[data-theme="light"] .frTitle{color:#0b7a59}
+html[data-theme="light"] .capBadge.pending,
+html[data-theme="light"] .capState.busy{color:#a8750a}
+html[data-theme="light"] .stStar{color:#d99a12}
+html[data-theme="light"] .locWarn{color:#a8750a}
+html[data-theme="light"] .psEmpty{color:#a8750a}
+html[data-theme="light"] .docWarn{color:#a8750a}
+html[data-theme="light"] .uAvatar,
+html[data-theme="light"] .capAvatar,
+html[data-theme="light"] .custAvatar,
+html[data-theme="light"] .tripAvatar{background:rgba(37,99,235,.12);color:#2563eb}
+html[data-theme="light"] .fixedRoutes{background:#f0fbf7;border-color:rgba(15,157,116,.4)}
+html[data-theme="light"] .fixedRoutes .frRow{background:#ffffff}
+html[data-theme="light"] .splashBar{background:#e4eaf3}
+html[data-theme="light"] .themeToggle{background:#eef2f8}
