@@ -316,8 +316,437 @@ export default function AdminPlaces() {
     const name = placeName.trim();
     const coords = parseCoordsInput(placeCoords);
     if (!name || !placeDist) { fail("Ø§ÙƒØªØ¨ Ø§Ù„Ø§Ø³Ù… ÙˆØ§Ø®ØªØ± Ø§Ù„Ø­ÙŠ"); return; }
-    if (!coords) { fail("Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¥Ø­Ø¯Ø§Ø«ÙŠØ§Øª Ø¨ØµÙŠØºØ© Ø®Ø±Ø§Ø¦Ø· Ø¬ÙˆØ¬Ù„ â€” Ù…Ø«Ø§Ù„: 30.4706813ß}y¶‰žËkºwµçb„ð½‰ÕÑÑ½¸ùô4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á1¥ÍÐˆø4(€€€€€€€€€€€í¥Ñ¥•Ì¹µ…À ¡Œ¤€ôø€ 4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Üˆ­•äõíŒ¹¥‘ôø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Ý5…¥¸ˆø4(€€€€€€€€€€€€€€€€€€ñˆùíŒ¹¹…µ•ôð½ˆø4(€€€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰…Á5•Ñ„ˆùí‘¥ÍÑÉ¥ÑÌ¹™¥±Ñ•È ¡¤€ôø¹¥Ñå}¥€ôôôŒ¹¥¤¹±•¹Ñ¡ôƒb·f(ð½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½ÝÑ¥½¹Ìˆø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôøìÍ•Ñ‘¥Ñ¥Ñä¡Œ¤ìÍ•Ñ¥Ñå9…µ”¡Œ¹¹…µ”¤ìõôûb«bçb¿f+fð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…Á•°ˆ½¹±¥¬õì ¤€ôø‘•±¥Ñä¡Œ¥ôûb·bÃfð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€í¥Ñ¥•Ì¹±•¹Ñ €ôôô€À€˜˜€ñÀ±…ÍÍ9…µ”ô‰•µÁÑåMÑ…Ñ”ˆûfbœƒb«f#b³b¼ƒfb¿fƒb£bçb¼ð½Àùô4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€ð¼ø4(€€€€€€¥ô4(4(€€€€€ì¼¨€ôôôôôƒbŸfbb·f+bŸb„€ôôôôô€¨½ô4(€€€€€íÍÕˆ€ôôô€‰‘¥ÍÑÉ¥ÑÌˆ€˜˜€ 4(€€€€€€€€ðø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á½É´ˆø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õí‘¥ÍÑ¥Ñåô½¹¡…¹”õì¡”¤€ôøÍ•Ñ¥ÍÑ¥Ñä¡”¹Ñ…É•Ð¹Ù…±Õ”¥ôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûbŸb»b«bÄƒbŸffb¿f+fb¤¸¸¸ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í¥Ñ¥•Ì¹µ…À ¡Œ¤€ôø€ñ½ÁÑ¥½¸­•äõíŒ¹¥‘ôÙ…±Õ”õíŒ¹¥‘ôùíŒ¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õí‘¥ÍÑ9…µ•ôÁ±…•¡½±‘•Èô‹bŸbÏfƒbŸfb·f(ƒŠPƒfb¯bŸfèƒffbÄƒbŸfb³bËbŸbÄˆ½¹¡…¹”õì¡”¤€ôøÍ•Ñ¥ÍÑ9…µ”¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…ÕÑ¡MÕ‰µ¥Ðˆ½¹±¥¬õíÍ…Ù•¥ÍÑÉ¥Ñô‘¥Í…‰±•õí‰ÕÍåôùí•‘¥Ñ¥ÍÐ€ü€‹b·fbàƒbŸfb«bçb¿f+fˆ€è€‹b—bÛbŸfb¤‰ôð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€í•‘¥Ñ¥ÍÐ€˜˜€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰Ý¥é	…¬ˆ½¹±¥¬õì ¤€ôøìÍ•Ñ‘¥Ñ¥ÍÐ¡¹Õ±°¤ìÍ•Ñ¥ÍÑ9…µ” ˆˆ¤ìõôûb—fbëbŸb„ð½‰ÕÑÑ½¸ùô4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á1¥ÍÐˆø4(€€€€€€€€€€€í‘¥ÍÑÉ¥ÑÌ¹µ…À ¡¤€ôø€ 4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Üˆ­•äõí¹¥‘ôø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Ý5…¥¸ˆø4(€€€€€€€€€€€€€€€€€€ñˆùí¹¹…µ•ôð½ˆø4(€€€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰…Á5•Ñ„ˆùí¹¥Ñ¥•Ìü¹¹…µ”ñð€ˆ‰ôð½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½ÝÑ¥½¹Ìˆø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôøìÍ•Ñ‘¥Ñ¥ÍÐ¡¤ìÍ•Ñ¥ÍÑ9…µ”¡¹¹…µ”¤ìÍ•Ñ¥ÍÑ¥Ñä¡¹¥Ñå}¥¤ìõôûb«bçb¿f+fð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…Á•°ˆ½¹±¥¬õì ¤€ôø‘•±¥ÍÑÉ¥Ð¡¥ôûb·bÃfð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€í‘¥ÍÑÉ¥ÑÌ¹±•¹Ñ €ôôô€À€˜˜€ñÀ±…ÍÍ9…µ”ô‰•µÁÑåMÑ…Ñ”ˆûfbœƒb«f#b³b¼ƒbb·f+bŸb„ƒb£bçb¼ƒŠPƒbbÛfCfƒfb¿f+fb¤ƒbf#ff/bœð½Àùô4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€ð¼ø4(€€€€€€¥ô4(4(€€€€€ì¼¨€ôôôôôƒbŸfbÓf#bŸbÇbäƒf#bŸfbçfbŸfbŸb¨ƒŠPƒbÓbŸbÓb¤ƒbŸfb—b¿b»bŸf€ôôôôô€¨½ô4(€€€€€íÍÕˆ€ôôô€‰Á±…•Ìˆ€˜˜Á±…•ÍY¥•Ü€ôôô€‰™½É´ˆ€˜˜€ 4(€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á½ÉµI½ÕÑ•Ìˆø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á½Éµ!•…ˆø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰Ý¥é	…¬ˆ½¹±¥¬õì ¤€ôøìÉ•Í•ÑA±…•½É´ ¤ìÍ•ÑA±…•ÍY¥•Ü ‰±¥ÍÐˆ¤ìõôûŠHƒbÇb³f#bäƒffbŸb›fb¤ƒbŸfbfbŸffð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ Ìùí•‘¥ÑA±…”€ü€‹b«bçb¿f+fƒffbŸfˆ€è€‹b—bÛbŸfb¤ƒffbŸfƒb³b¿f+b¼‰ôð½ Ìø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûbŸfb·f(ð½±…‰•°ø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õíÁ±…•¥ÍÑô½¹¡…¹”õì¡”¤€ôøÍ•ÑA±…•¥ÍÐ¡”¹Ñ…É•Ð¹Ù…±Õ”¥ôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûbŸb»b«bÄƒbŸfb·f(¸¸¸ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í‘¥ÍÑÉ¥ÑÌ¹µ…À ¡¤€ôø€ñ½ÁÑ¥½¸­•äõí¹¥‘ôÙ…±Õ”õí¹¥‘ôùí¹¹…µ•ôƒŠPí¹¥Ñ¥•Ìü¹¹…µ”ñð€ˆ‰ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûbŸbÏfƒbŸfbÓbŸbÇbäƒbf ƒbŸfbçfbŸfb¤ƒbf ƒbŸffb·fð½±…‰•°ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÁ±…•9…µ•ôÁ±…•¡½±‘•Èô‹fb¯bŸfèƒfbÏb³b¼ƒbŸfff#bÄˆ½¹¡…¹”õì¡”¤€ôøÍ•ÑA±…•9…µ”¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûb«bŸb£bäƒfffbŸfb|€£bŸb»b«f+bŸbÇf(ƒŠPƒfb¯bŸfèƒbÓbŸbÇbä¤ð½±…‰•°ø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õíÁ±…•A…É•¹Ñô½¹¡…¹”õì¡”¤€ôøÍ•ÑA±…•A…É•¹Ð¡”¹Ñ…É•Ð¹Ù…±Õ”¥ôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûb£b¿f#fƒŠPƒffbŸfƒbÇb›f+bÏf(ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€íÁ±…•Ì¹™¥±Ñ•È ¡À¤€ôøÀ¹¥€„ôô•‘¥ÑA±…”ü¹¥¤¹µ…À ¡À¤€ôø€ 4(€€€€€€€€€€€€€€€€ñ½ÁÑ¥½¸­•äõíÀ¹¥‘ôÙ…±Õ”õíÀ¹¥‘ôùíÀ¹¹…µ•õíÀ¹‘¥ÍÑÉ¥ÑÌü¹¹…µ”€ü€ƒŠP€‘íÀ¹‘¥ÍÑÉ¥ÑÌ¹¹…µ•õ€€è€ˆ‰ôð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûbŸfb—b·b¿bŸb¯f+bŸb¨€£bŸfb×fƒffƒb»bÇbŸb›bÜƒb³f#b³f¤ð½±…‰•°ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÁ±…•½½É‘ÍôÁ±…•¡½±‘•ÈôˆÌÀ¸ÐÜÀØàÄÌ°€ÌÄ¸ÄàÐÐÄäÄˆ4(€€€€€€€€€€€€€ÍÑå±”õíì‘¥É•Ñ¥½¸è€‰±ÑÈˆ°Ñ•áÑ±¥¸è€‰±•™Ðˆõô4(€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøÍ•ÑA±…•½½É‘Ì¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…ÕÑ¡MÕ‰µ¥Ðˆ½¹±¥¬õíÍ…Ù•A±…•ô‘¥Í…‰±•õí‰ÕÍåôùí•‘¥ÑA±…”€ü€‹b·fbàƒbŸfb«bçb¿f+fˆ€è€‹b·fbàƒbŸfffbŸf‰ôð½‰ÕÑÑ½¸ø4(€€€€€€€€ð½‘¥Øø4(€€€€€€¥ô4(4(€€€€€ì¼¨€ôôôôôƒbŸfbÓf#bŸbÇbäƒf#bŸfbçfbŸfbŸb¨ƒŠPƒbÓbŸbÓb¤ƒbŸffbŸb›fb¤€ôôôôô€¨½ô4(€€€€€íÍÕˆ€ôôô€‰Á±…•Ìˆ€˜˜Á±…•ÍY¥•Ü€ôôô€‰±¥ÍÐˆ€˜˜€ 4(€€€€€€€€ðø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁQ½½±Ìˆø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…ÕÑ¡MÕ‰µ¥Ðˆ½¹±¥¬õí½Á•¹9•ÝA±…•ôû¾ò,ƒb—bÛbŸfb¤ƒffbŸfƒb³b¿f+b¼ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰½™™•ÉA±ÕÌˆ½¹±¥¬õì ¤€ôø‘½Ý¹±½…‘ÍØ ‹fbŸfb ·bŸfbŸfbŸff¹ÍØˆ°l4(€€€€€€€€€€€€€l‹bŸffb¿f+fb¤ˆ°€‹bŸfb·f(ˆ°€‹bŸbÏfƒbŸfffbŸfˆ°€‹b»bÜƒbŸfbçbÇbØ±…Ðˆ°€‹b»bÜƒbŸfbßf#f±¹œˆ°€‹b«bŸb£bäƒfffbŸf€£bŸb»b«f+bŸbÇf(¤‰t°4(€€€€€€€€€€€€€l‹b£ffbœˆ°€‹bŸffffˆ°€‹bŸffffƒbÓbŸbÇbä€Ôˆ°€ˆÌÀ¸ÐÔäÜˆ°€ˆÌÄ¸ÄààØˆ°€ˆ‰t°4(€€€€€€€€€€€€€l‹b£ffbœˆ°€‹bŸffffˆ°€‹fbÏb³b¼ƒbŸfff#bÄˆ°€ˆÌÀ¸ÐØÀÀˆ°€ˆÌÄ¸ÄàäÀˆ°€‹bŸffffƒbÓbŸbÇbä€Ô‰t°4(€€€€€€€€€€€€€l‹b£ffbœˆ°€‹bŸffffˆ°€‹b×f+b¿ff+b¤ƒbŸfbÓfbŸb„ˆ°€ˆÌÀ¸ÐØÀÈˆ°€ˆÌÄ¸ÄàäÈˆ°€‹bŸffffƒbÓbŸbÇbä€Ô‰t°4(€€€€€€€€€€€t¥ôûŠ²ƒb«b·ff+fƒfbŸfb MXð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰½™™•É5…¥¸ˆ½¹±¥¬õì ¤€ôøÁ±…•Í¥±•I•˜¹ÕÉÉ•¹Ðü¹±¥¬ ¥ô‘¥Í…‰±•õí‰ÕÍåôø4(€€€€€€€€€€€€€í‰ÕÍä€ü€‹b³bŸbÇf4ƒbŸfbŸbÏb«f+bÇbŸb¼¸¸¸ˆ€è€‹Š²ƒbŸbÏb«f+bÇbŸb¼ƒbŸfbfbŸffƒffMX‰ô4(€€€€€€€€€€€€ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÉ•˜õíÁ±…•Í¥±•I•™ôÑåÁ”ô‰™¥±”ˆ…•ÁÐôˆ¹ÍØˆ¡¥‘‘•¸4(€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøì½¹ÍÐ˜€ô”¹Ñ…É•Ð¹™¥±•Ìü¹lÁtì¥˜€¡˜¤¥µÁ½ÉÑA±…•ÍÍØ¡˜¤ì”¹Ñ…É•Ð¹Ù…±Õ”€ô€ˆˆìõô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€ì¼¨ƒffbŸb«bÄƒbŸfb«b×ff+b¤€¨½ô4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á¥±Ñ•ÉÌˆø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õíÁ¥Ñåô½¹¡…¹”õì¡”¤€ôøìÍ•ÑA¥Ñä¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•ÑA¥ÍÐ ˆˆ¤ìÍ•ÑAA…É•¹Ð ˆˆ¤ìÍ•ÑA±…•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûffƒbŸffb¿fð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í¥Ñ¥•Ì¹µ…À ¡Œ¤€ôø€ñ½ÁÑ¥½¸­•äõíŒ¹¥‘ôÙ…±Õ”õíŒ¹¥‘ôùíŒ¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õíÁ¥ÍÑô½¹¡…¹”õì¡”¤€ôøìÍ•ÑA¥ÍÐ¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•ÑAA…É•¹Ð ˆˆ¤ìÍ•ÑA±…•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûffƒbŸfbb·f+bŸb„ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€íÁ±…•¥±Ñ•É¥ÍÑÉ¥ÑÌ¹µ…À ¡¤€ôø€ñ½ÁÑ¥½¸­•äõí¹¥‘ôÙ…±Õ”õí¹¥‘ôùí¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õíÁA…É•¹Ñô½¹¡…¹”õì¡”¤€ôøìÍ•ÑAA…É•¹Ð¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•ÑA±…•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûbŸfb«bŸb£bçb¤ƒfffbŸf¸¸¸ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€íÁ…É•¹Ñ¥±Ñ•ÉA±…•Ì¹µ…À ¡À¤€ôø€ñ½ÁÑ¥½¸­•äõíÀ¹¥‘ôÙ…±Õ”õíÀ¹¥‘ôùíÀ¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€ì¡Á¥ÑäñðÁ¥ÍÐñðÁA…É•¹Ð¤€˜˜€ 4(€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰Ý¥é	…¬ˆ½¹±¥¬õì ¤€ôøìÍ•ÑA¥Ñä ˆˆ¤ìÍ•ÑA¥ÍÐ ˆˆ¤ìÍ•ÑAA…É•¹Ð ˆˆ¤ìÍ•ÑA±…•A…” Ä¤ìõôûfbÏb´ƒbŸfffbŸb«bÄð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€¥ô4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á1¥ÍÐˆø4(€€€€€€€€€€€íÁ…•‘A±…•Ì¹µ…À ¡À¤€ôø€ 4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Üˆ­•äõíÀ¹¥‘ôø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Ý5…¥¸ˆø4(€€€€€€€€€€€€€€€€€€ñˆùíÀ¹¹…µ•ôð½ˆø4(€€€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰…Á5•Ñ„ˆø4(€€€€€€€€€€€€€€€€€€€íÀ¹Á…É•¹Ðü¹¹…µ”€üƒb«bŸb£bäƒff €‘íÀ¹Á…É•¹Ð¹¹…µ•ôƒŠP€€è€ˆ‰ô4(€€€€€€€€€€€€€€€€€€€íÀ¹‘¥ÍÑÉ¥ÑÌü¹¹…µ”€ü€‘íÀ¹‘¥ÍÑÉ¥ÑÌ¹¹…µ•ôƒŠP€€è€ˆ‰õíÀ¹‘¥ÍÑÉ¥ÑÌü¹¥Ñ¥•Ìü¹¹…µ”ñð€‹b£b¿f#fƒb·f(‰ô4(€€€€€€€€€€€€€€€€€€€íÁ±…•Ì¹™¥±Ñ•È ¡Ì¤€ôøÌ¹Á…É•¹Ñ}Á±…•}¥€ôôôÀ¹¥¤¹±•¹Ñ €ø€À€˜˜€ƒ
-Ü€‘íÁ±…•Ì¹™¥±Ñ•È ¡Ì¤€ôøÌ¹Á…É•¹Ñ}Á±…•}¥€ôôôÀ¹¥¤¹±•¹Ñ¡ôƒffbŸfƒb«bŸb£båô4(€€€€€€€€€€€€€€€€€€ð½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½ÝÑ¥½¹Ìˆø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôø½Á•¹‘¥ÑA±…”¡À¥ôûb«bçb¿f+fð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…Á•°ˆ½¹±¥¬õì ¤€ôø‘•±A±…”¡À¥ôûb·bÃfð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€íÁ…•‘A±…•Ì¹±•¹Ñ €ôôô€À€˜˜€ñÀ±…ÍÍ9…µ”ô‰•µÁÑåMÑ…Ñ”ˆûfbœƒb«f#b³b¼ƒbfbŸffƒfbßbŸb£fb¤ƒŠPƒbbÛfCfƒffbŸff/bœƒb³b¿f+b¿f/bœð½Àùô4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñA…•ÈÁ…”õíÁ±…•AôÑ½Ñ…±A…•ÌõíÁ±…•ÍA…•Íô½¹A…”õíÍ•ÑA±…•A…•ô€¼ø4(€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰…Á½Õ¹Ðˆûb—b³fbŸff(ƒbŸfbfbŸffèí™¥±Ñ•É•‘A±…•Ì¹±•¹Ñ¡õí™¥±Ñ•É•‘A±…•Ì¹±•¹Ñ €„ôôÁ±…•Ì¹±•¹Ñ €ü€€£ffƒbb×f€‘íÁ±…•Ì¹±•¹Ñ¡ô¥€€è€ˆ‰ôð½Àø4(€€€€€€€€ð¼ø4(€€€€€€¥ô4(4(€€€€€ì¼¨€ôôôôôƒbŸffbÓbŸf#f+bÄƒŠPƒbÓbŸbÓb¤ƒbŸfb—b¿b»bŸf€ôôôôô€¨½ô4(€€€€€íÍÕˆ€ôôô€‰É½ÕÑ•Ìˆ€˜˜É½ÕÑ•ÍY¥•Ü€ôôô€‰™½É´ˆ€˜˜€ 4(€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á½ÉµI½ÕÑ•Ìˆø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á½Éµ!•…ˆø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰Ý¥é	…¬ˆ½¹±¥¬õì ¤€ôøìÉ•Í•ÑI½ÕÑ•½É´ ¤ìÍ•ÑI½ÕÑ•ÍY¥•Ü ‰±¥ÍÐˆ¤ìõôûŠHƒbÇb³f#bäƒffbŸb›fb¤ƒbŸffbÓbŸf#f+bÄð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ Ìùí•‘¥ÑI½ÕÑ”€ü€‹b«bçb¿f+fƒfbÓf#bŸbÄˆ€è€‹b—bÛbŸfb¤ƒfbÓf#bŸbÄƒb³b¿f+b¼‰ôð½ Ìø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûbŸbÏfƒbŸffbÓf#bŸbÄ€£bŸb»b«f+bŸbÇf(¤ð½±…‰•°ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÉ½ÕÑ•9…µ•ôÁ±…•¡½±‘•Èô‹fb¯bŸfèƒfbÓf#bŸbÄƒbŸfb³bŸfbçb¤ˆ½¹¡…¹”õì¡”¤€ôøÍ•ÑI½ÕÑ•9…µ”¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñA±…•M•…É ±…‰•°ô‹ffˆÙ…±Õ”õíÉ½ÕÑ•É½µô½¹A¥¬õíÍ•ÑI½ÕÑ•É½µô•á±Õ‘•%õíÉ½ÕÑ•Q¼ü¹¥‘ô€¼ø4(€€€€€€€€€€ñA±…•M•…É ±…‰•°ô‹b—ff$ˆÙ…±Õ”õíÉ½ÕÑ•Q½ô½¹A¥¬õíÍ•ÑI½ÕÑ•Q½ô•á±Õ‘•%õíÉ½ÕÑ•É½´ü¹¥‘ô€¼ø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰É½ÜÈˆø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€€€ñ±…‰•°ûbŸfbÏbçbÄ€£b°»f¤ð½±…‰•°ø4(€€€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÉ½ÕÑ•AÉ¥•ô¥¹ÁÕÑ5½‘”ô‰‘•¥µ…°ˆÁ±…•¡½±‘•Èô‹fb¯bŸfè€ÄÔˆ½¹¡…¹”õì¡”¤€ôøÍ•ÑI½ÕÑ•AÉ¥”¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€€€ñ±…‰•°ûbÏbçbÄƒbŸfbçf#b¿b¤€£bŸb»b«f+bŸbÇf(ƒŠPƒfbŸbÇbè€ôƒffbÌƒbŸfbÏbçbÄ¤ð½±…‰•°ø4(€€€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÉ½ÕÑ•I•Ùô¥¹ÁÕÑ5½‘”ô‰‘•¥µ…°ˆÁ±…•¡½±‘•Èô‹fb¯bŸfè€ÈÀˆ½¹¡…¹”õì¡”¤€ôøÍ•ÑI½ÕÑ•I•Ø¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥•±ˆø4(€€€€€€€€€€€€ñ±…‰•°ûffbŸb·bãbŸb¨€£bŸb»b«f+bŸbÇf(¤ð½±…‰•°ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÙ…±Õ”õíÉ½ÕÑ•9½Ñ•ÍôÁ±…•¡½±‘•Èô‹bf(ƒffbŸb·bãbŸb¨ƒbçfƒfbÃbœƒbŸffbÓf#bŸbÄˆ½¹¡…¹”õì¡”¤€ôøÍ•ÑI½ÕÑ•9½Ñ•Ì¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…ÕÑ¡MÕ‰µ¥Ðˆ½¹±¥¬õíÍ…Ù•I½ÕÑ•ô‘¥Í…‰±•õí‰ÕÍåôùí•‘¥ÑI½ÕÑ”€ü€‹b·fbàƒbŸfb«bçb¿f+fˆ€è€‹b·fbàƒbŸffbÓf#bŸbÄ‰ôð½‰ÕÑÑ½¸ø4(€€€€€€€€ð½‘¥Øø4(€€€€€€¥ô4(4(€€€€€ì¼¨€ôôôôôƒbŸffbÓbŸf#f+bÄƒŠPƒbÓbŸbÓb¤ƒbŸffbŸb›fb¤€ôôôôô€¨½ô4(€€€€€íÍÕˆ€ôôô€‰É½ÕÑ•Ìˆ€˜˜É½ÕÑ•ÍY¥•Ü€ôôô€‰±¥ÍÐˆ€˜˜€ 4(€€€€€€€€ðø4(€€€€€€€€€ì¼¨ƒffb«bŸb´ƒb—bãfbŸbÄ¿b—b»fbŸb„ƒbŸffbŸb›fb¤ƒbçfb¼ƒbŸfbçff+f€¨½ô4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁQ½±”ˆø4(€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€ñˆûb—bãfbŸbÄƒfbŸb›fb¤ƒ
-¯fbÓbŸf#f+bÄƒb£bbÏbçbŸbÄƒb¯bŸb£b«b§
-ìƒff(ƒbÓbŸbÓb¤ƒbŸfbçff+fð½ˆø4(€€€€€€€€€€€€€€ñÍµ…±°ûbçfb¼ƒbŸfb—b»fbŸb„ƒf+b£ff$ƒbŸfbÏbçbÄƒbŸfb¯bŸb£b¨ƒfbßb£ff/bœƒb«ffbŸb›f+f/bŸb0ƒfffƒbŸffbŸb›fb¤ƒbŸfb³bŸfbËb¤ƒfbœƒb«bãfbÄð½Íµ…±°ø4(€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€ñ±…‰•°±…ÍÍ9…µ”ô‰ÍÝ¥Ñ ˆø4(€€€€€€€€€€€€€€ñ¥¹ÁÕÐÑåÁ”ô‰¡•­‰½àˆ¡•­•õíÍ¡½Ý¥á•‘I½ÕÑ•Íô½¹¡…¹”õì¡”¤€ôøÑ½±•¥á•‘I½ÕÑ•Ì¡”¹Ñ…É•Ð¹¡•­•¥ô€¼ø4(€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰ÑÉ…¬ˆ€¼ø4(€€€€€€€€€€€€ð½±…‰•°ø4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁQ½½±Ìˆø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…ÕÑ¡MÕ‰µ¥Ðˆ½¹±¥¬õí½Á•¹9•ÝI½ÕÑ•ôû¾ò,ƒb—bÛbŸfb¤ƒfbÓf#bŸbÄƒb³b¿f+b¼ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰½™™•ÉA±ÕÌˆ½¹±¥¬õì ¤€ôø‘½Ý¹±½…‘ÍØ ‹fbŸfb ·bŸffbÓbŸf#f+bÄ¹ÍØˆ°l4(€€€€€€€€€€€€€l‹ffˆ°€‹b—ff$ˆ°€‹bŸfbÏbçbÄˆ°€‹bÏbçbÄƒbŸfbçf#b¿b¤€£bŸb»b«f+bŸbÇf(¤ˆ°€‹ffbŸb·bãbŸb¨‰t°4(€€€€€€€€€€€€€l‹fb·bßb¤ƒfbßbŸbÄƒb£ffbœˆ°€‹b³bŸfbçb¤ƒb£ffbœˆ°€ˆÄÔˆ°€ˆˆ°€‹bbÏbçbŸbÄƒb¯bŸb£b«b¤‰t°4(€€€€€€€€€€€t¥ôûŠ²ƒb«b·ff+fƒfbŸfb MXð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰½™™•É5…¥¸ˆ½¹±¥¬õì ¤€ôøÉ½ÕÑ•Í¥±•I•˜¹ÕÉÉ•¹Ðü¹±¥¬ ¥ô‘¥Í…‰±•õí‰ÕÍåôø4(€€€€€€€€€€€€€í‰ÕÍä€ü€‹b³bŸbÇf4ƒbŸfbŸbÏb«f+bÇbŸb¼¸¸¸ˆ€è€‹Š²ƒbŸbÏb«f+bÇbŸb¼ƒbŸffbÓbŸf#f+bÄƒffMX‰ô4(€€€€€€€€€€€€ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ñ¥¹ÁÕÐÉ•˜õíÉ½ÕÑ•Í¥±•I•™ôÑåÁ”ô‰™¥±”ˆ…•ÁÐôˆ¹ÍØˆ¡¥‘‘•¸4(€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøì½¹ÍÐ˜€ô”¹Ñ…É•Ð¹™¥±•Ìü¹lÁtì¥˜€¡˜¤¥µÁ½ÉÑI½ÕÑ•ÍÍØ¡˜¤ì”¹Ñ…É•Ð¹Ù…±Õ”€ô€ˆˆìõô€¼ø4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€ì¼¨ƒffbŸb«bÄƒbŸfb«b×ff+b¤€¨½ô4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á¥±Ñ•ÉÌˆø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õí™¥Ñåô½¹¡…¹”õì¡”¤€ôøìÍ•Ñ¥Ñä¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•Ñ¥ÍÐ ˆˆ¤ìÍ•ÑA±…” ˆˆ¤ìÍ•ÑI½ÕÑ•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûffƒbŸffb¿fð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í¥Ñ¥•Ì¹µ…À ¡Œ¤€ôø€ñ½ÁÑ¥½¸­•äõíŒ¹¥‘ôÙ…±Õ”õíŒ¹¥‘ôùíŒ¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õí™¥ÍÑô½¹¡…¹”õì¡”¤€ôøìÍ•Ñ¥ÍÐ¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•ÑA±…” ˆˆ¤ìÍ•ÑI½ÕÑ•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûffƒbŸfbb·f+bŸb„ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í™¥±Ñ•É¥ÍÑÉ¥ÑÌ¹µ…À ¡¤€ôø€ñ½ÁÑ¥½¸­•äõí¹¥‘ôÙ…±Õ”õí¹¥‘ôùí¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€ñÍ•±•ÐÙ…±Õ”õí™A±…•ô½¹¡…¹”õì¡”¤€ôøìÍ•ÑA±…”¡”¹Ñ…É•Ð¹Ù…±Õ”¤ìÍ•ÑI½ÕÑ•A…” Ä¤ìõôø4(€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆûffƒbŸfbçfbŸfbŸb¨ð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€í™¥±Ñ•ÉA±…•Ì¹µ…À ¡À¤€ôø€ñ½ÁÑ¥½¸­•äõíÀ¹¥‘ôÙ…±Õ”õíÀ¹¥‘ôùíÀ¹¹…µ•ôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€ì¡™¥Ñäñð™¥ÍÐñð™A±…”¤€˜˜€ 4(€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰Ý¥é	…¬ˆ½¹±¥¬õì ¤€ôøìÍ•Ñ¥Ñä ˆˆ¤ìÍ•Ñ¥ÍÐ ˆˆ¤ìÍ•ÑA±…” ˆˆ¤ìÍ•ÑI½ÕÑ•A…” Ä¤ìõôûfbÏb´ƒbŸfffbŸb«bÄð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€¥ô4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…Á1¥ÍÐˆø4(€€€€€€€€€€€íÁ…•‘I½ÕÑ•Ì¹µ…À ¡È¤€ôø€ 4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Üˆ­•äõíÈ¹¥‘ôø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½Ý5…¥¸ˆø4(€€€€€€€€€€€€€€€€€€ñˆùíÈ¹¹…µ”ñð€‘íÈ¹™É½µ}Á±…”ü¹¹…µ”ñð€‹b|‰ôƒŠ@€‘íÈ¹Ñ½}Á±…”ü¹¹…µ”ñð€‹b|‰õôð½ˆø4(€€€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰…Á5•Ñ„ˆø4(€€€€€€€€€€€€€€€€€€€íÈ¹™É½µ}Á±…”ü¹¹…µ•ôƒŠ@íÈ¹Ñ½}Á±…”ü¹¹…µ•ôƒ
-Üí9Õµ‰•È¡È¹ÁÉ¥”¤¹Ñ½¥á• À¥ôƒb°4(€€€€€€€€€€€€€€€€€€€íÈ¹É•Ù•ÉÍ•}ÁÉ¥”€ü€€£bçf#b¿b¤€‘í9Õµ‰•È¡È¹É•Ù•ÉÍ•}ÁÉ¥”¤¹Ñ½¥á• À¥ôƒb°¥€€è€ˆ‰ô4(€€€€€€€€€€€€€€€€€€€íÈ¹¹½Ñ•Ì€ü€ƒŠP€‘íÈ¹¹½Ñ•Íõ€€è€ˆ‰ô4(€€€€€€€€€€€€€€€€€€ð½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰…ÁI½ÝÑ¥½¹Ìˆø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôø½Á•¹‘¥ÑI½ÕÑ”¡È¥ôûb«bçb¿f+fð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸±…ÍÍ9…µ”ô‰…Á•°ˆ½¹±¥¬õì ¤€ôø‘•±I½ÕÑ”¡È¥ôûb·bÃfð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€íÁ…•‘I½ÕÑ•Ì¹±•¹Ñ €ôôô€À€˜˜€ñÀ±…ÍÍ9…µ”ô‰•µÁÑåMÑ…Ñ”ˆûfbœƒb«f#b³b¼ƒfbÓbŸf#f+bÄƒfbßbŸb£fb¤ƒŠPƒbbÛfCfƒfbÓf#bŸbÇf/bœƒb³b¿f+b¿f/bœð½Àùô4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñA…•ÈÁ…”õíÉ½ÕÑ•AôÑ½Ñ…±A…•ÌõíÉ½ÕÑ•ÍA…•Íô½¹A…”õíÍ•ÑI½ÕÑ•A…•ô€¼ø4(€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰…Á½Õ¹Ðˆûb—b³fbŸff(ƒbŸffbÓbŸf#f+bÄèí™¥±Ñ•É•‘I½ÕÑ•Ì¹±•¹Ñ¡õí™¥±Ñ•É•‘I½ÕÑ•Ì¹±•¹Ñ €„ôôÉ½ÕÑ•Ì¹±•¹Ñ €ü€€£ffƒbb×f€‘íÉ½ÕÑ•Ì¹±•¹Ñ¡ô¥€€è€ˆ‰ôð½Àø4(€€€€€€€€ð¼ø4(€€€€€€¥ô4(€€€€ð½Í•Ñ¥½¸ø4(€€¤ì4)ô4(
+    if (!coords) { fail("Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¥Ø­Ø¯Ø§Ø«ÙŠØ§Øª Ø¨ØµÙŠØºØ© Ø®Ø±Ø§Ø¦Ø· Ø¬ÙˆØ¬Ù„ â€” Ù…Ø«Ø§Ù„: 30.4706813, 31.1844191"); return; }
+    setBusy(true);
+    const payload = { name, lat: coords.lat, lng: coords.lng, district_id: placeDist, parent_place_id: placeParent || null };
+    const { error } = editPlace
+      ? await supabase.from("places").update(payload).eq("id", editPlace.id)
+      : await supabase.from("places").insert(payload);
+    setBusy(false);
+    if (error) { fail("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø­ÙØ¸: " + error.message); return; }
+    flash(editPlace ? "ØªÙ… ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…ÙƒØ§Ù† âœ“" : "ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…ÙƒØ§Ù† âœ“");
+    resetPlaceForm();
+    setPlacesView("list");
+    loadPlaces();
+  };
+  const delPlace = async (p: Place) => {
+    if (!window.confirm(`Ø­Ø°Ù Â«${p.name}Â»ØŸ Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù‡ Ø³ØªÙØ­Ø°Ù ÙˆØ§Ù„Ø£Ù…Ø§ÙƒÙ† Ø§Ù„ØªØ§Ø¨Ø¹Ø© Ù„Ù‡ Ø³ØªÙÙ‚Ø¯ Ø§Ø±ØªØ¨Ø§Ø·Ù‡Ø§.`)) return;
+    const { error } = await supabase.from("places").delete().eq("id", p.id);
+    if (error) { fail("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø­Ø°Ù: " + error.message); return; }
+    flash("ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…ÙƒØ§Ù† âœ“"); loadPlaces(); loadRoutes();
+  };
+
+  // ÙÙ„ØªØ±Ø© Ø§Ù„Ø£Ù…Ø§ÙƒÙ†: Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© / Ø§Ù„Ø­ÙŠ / Ø§Ù„ØªØ§Ø¨Ø¹ Ù„Ù…ÙƒØ§Ù†
+  const filteredPlaces = places.filter((p) => {
+    if (pParent && p.parent_place_id !== pParent) return false;
+    if (pDist && p.district_id !== pDist) return false;
+    if (pCity && !pDist) {
+      const d = districts.find((x) => x.id === p.district_id);
+      if (d?.city_id !== pCity) return false;
+    }
+    return true;
+  });
+  const placesPages = Math.max(1, Math.ceil(filteredPlaces.length / PER_PAGE));
+  const placePg = Math.min(placePage, placesPages);
+  const pagedPlaces = filteredPlaces.slice((placePg - 1) * PER_PAGE, placePg * PER_PAGE);
+  const placeFilterDistricts = pCity ? districts.filter((d) => d.city_id === pCity) : districts;
+  const parentFilterPlaces = pDist ? places.filter((p) => p.district_id === pDist) : places;
+
+  /* ===== Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± ===== */
+  const resetRouteForm = () => {
+    setRouteName(""); setRouteFrom(null); setRouteTo(null);
+    setRoutePrice(""); setRouteRev(""); setRouteNotes(""); setEditRoute(null);
+  };
+  const openNewRoute = () => { resetRouteForm(); setRoutesView("form"); };
+  const openEditRoute = (r: RouteRow) => {
+    setEditRoute(r); setRouteName(r.name || ""); setRoutePrice(String(r.price));
+    setRouteRev(r.reverse_price ? String(r.reverse_price) : ""); setRouteNotes(r.notes || "");
+    setRouteFrom(places.find((p) => p.id === r.from_place_id) || null);
+    setRouteTo(places.find((p) => p.id === r.to_place_id) || null);
+    setRoutesView("form");
+  };
+  const saveRoute = async () => {
+    if (!routeFrom || !routeTo) { fail("Ø§Ø®ØªØ± Ù†Ù‚Ø·ØªÙŠ Â«Ù…Ù†Â» ÙˆÂ«Ø¥Ù„Ù‰Â» Ù…Ù† Ø§Ù„Ø£Ù…Ø§ÙƒÙ† Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø©"); return; }
+    const price = parseFloat(routePrice);
+    if (Number.isNaN(price) || price <= 0) { fail("Ø£Ø¯Ø®Ù„ Ø³Ø¹Ø±Ù‹Ø§ ØµØ­ÙŠØ­Ù‹Ø§"); return; }
+    const rev = routeRev.trim() ? parseFloat(routeRev) : null;
+    if (routeRev.trim() && (Number.isNaN(rev!) || rev! <= 0)) { fail("Ø³Ø¹Ø± Ø§Ù„Ø¹ÙˆØ¯Ø© ØºÙŠØ± ØµØ§Ù„Ø­"); return; }
+    setBusy(true);
+    const payload = {
+      name: routeName.trim() || null,
+      from_place_id: routeFrom.id, to_place_id: routeTo.id,
+      price, reverse_price: rev, notes: routeNotes.trim() || null,
+    };
+    const { error } = editRoute
+      ? await supabase.from("route_prices").update(payload).eq("id", editRoute.id)
+      : await supabase.from("route_prices").upsert(payload, { onConflict: "from_place_id,to_place_id" });
+    setBusy(false);
+    if (error) { fail("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø­ÙØ¸: " + error.message); return; }
+    flash(editRoute ? "ØªÙ… ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø´ÙˆØ§Ø± âœ“" : "ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø´ÙˆØ§Ø± âœ“");
+    resetRouteForm();
+    setRoutesView("list");
+    loadRoutes();
+  };
+  const delRoute = async (r: RouteRow) => {
+    if (!window.confirm("Ø­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´ÙˆØ§Ø±ØŸ")) return;
+    const { error } = await supabase.from("route_prices").delete().eq("id", r.id);
+    if (error) { fail("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø­Ø°Ù: " + error.message); return; }
+    flash("ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø´ÙˆØ§Ø± âœ“"); loadRoutes();
+  };
+
+  // ÙÙ„ØªØ±Ø© Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± Ø¨Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© / Ø§Ù„Ø­ÙŠ / Ø§Ù„Ø¹Ù„Ø§Ù…Ø©
+  const placeById = (id: string) => places.find((p) => p.id === id);
+  const filteredRoutes = routes.filter((r) => {
+    if (fPlace && r.from_place_id !== fPlace && r.to_place_id !== fPlace) return false;
+    if (fDist || fCity) {
+      const fp = placeById(r.from_place_id);
+      const tp = placeById(r.to_place_id);
+      const matchDist = (p?: Place) => p && p.district_id === fDist;
+      const matchCity = (p?: Place) => {
+        if (!p || !p.district_id) return false;
+        const d = districts.find((x) => x.id === p.district_id);
+        return d?.city_id === fCity;
+      };
+      if (fDist && !matchDist(fp) && !matchDist(tp)) return false;
+      if (fCity && !fDist && !matchCity(fp) && !matchCity(tp)) return false;
+    }
+    return true;
+  });
+  const routesPages = Math.max(1, Math.ceil(filteredRoutes.length / PER_PAGE));
+  const routePg = Math.min(routePage, routesPages);
+  const pagedRoutes = filteredRoutes.slice((routePg - 1) * PER_PAGE, routePg * PER_PAGE);
+  const filterDistricts = fCity ? districts.filter((d) => d.city_id === fCity) : districts;
+  const filterPlaces = fDist ? places.filter((p) => p.district_id === fDist) : places;
+
+  /* ===== Ø§Ø³ØªÙŠØ±Ø§Ø¯ CSV ===== */
+  const importPlacesCsv = async (file: File) => {
+    const rows = parseCsv(await file.text());
+    if (!rows.length) { fail("Ø§Ù„Ù…Ù„Ù ÙØ§Ø±Øº"); return; }
+    // ØªØ®Ø·Ù‘ÙŠ ØµÙ Ø§Ù„Ø¹Ù†Ø§ÙˆÙŠÙ† Ø¥Ù† ÙˆÙØ¬Ø¯
+    const data = isNaN(parseFloat(rows[0][3])) ? rows.slice(1) : rows;
+    setBusy(true);
+    let ok = 0, bad = 0;
+    for (const r of data) {
+      const [cityName, distName, placeName, latS, lngS, parentName] = r.map((x) => (x || "").trim());
+      const lat = parseFloat(latS), lng = parseFloat(lngS);
+      if (!cityName || !distName || !placeName || Number.isNaN(lat) || Number.isNaN(lng)) { bad++; continue; }
+      const { data: city } = await supabase.from("cities").upsert({ name: cityName }, { onConflict: "name" }).select().single();
+      if (!city) { bad++; continue; }
+      const { data: dist } = await supabase.from("districts").upsert({ name: distName, city_id: city.id }, { onConflict: "city_id,name" }).select().single();
+      if (!dist) { bad++; continue; }
+      let parentId: string | null = null;
+      if (parentName) {
+        const { data: pp } = await supabase.from("places").select("id").eq("name", parentName).maybeSingle();
+        parentId = pp?.id || null;
+      }
+      const { error } = await supabase.from("places").upsert(
+        { name: placeName, lat, lng, district_id: dist.id, parent_place_id: parentId }, { onConflict: "name" });
+      if (error) bad++; else ok++;
+    }
+    setBusy(false);
+    flash(`ØªÙ… Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ âœ“ Ù†Ø¬Ø­: ${ok} â€” ÙØ´Ù„: ${bad}`);
+    loadAll();
+  };
+
+  const importRoutesCsv = async (file: File) => {
+    const rows = parseCsv(await file.text());
+    if (!rows.length) { fail("Ø§Ù„Ù…Ù„Ù ÙØ§Ø±Øº"); return; }
+    const data = isNaN(parseFloat(rows[0][2])) ? rows.slice(1) : rows;
+    setBusy(true);
+    let ok = 0, bad = 0;
+    for (const r of data) {
+      const [fromName, toName, priceS, revS, notes] = r.map((x) => (x || "").trim());
+      const price = parseFloat(priceS);
+      const rev = revS ? parseFloat(revS) : null;
+      if (!fromName || !toName || Number.isNaN(price) || price <= 0) { bad++; continue; }
+      const { data: fp } = await supabase.from("places").select("id").eq("name", fromName).maybeSingle();
+      const { data: tp } = await supabase.from("places").select("id").eq("name", toName).maybeSingle();
+      if (!fp || !tp) { bad++; continue; }
+      const { error } = await supabase.from("route_prices").upsert({
+        from_place_id: fp.id, to_place_id: tp.id, price,
+        reverse_price: rev, notes: notes || null,
+      }, { onConflict: "from_place_id,to_place_id" });
+      if (error) bad++; else ok++;
+    }
+    setBusy(false);
+    flash(`ØªÙ… Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± âœ“ Ù†Ø¬Ø­: ${ok} â€” ÙØ´Ù„: ${bad} (Ø§Ù„ÙØ´Ù„ ØºØ§Ù„Ø¨Ù‹Ø§ Ø£Ø³Ù…Ø§Ø¡ Ø£Ù…Ø§ÙƒÙ† ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©)`);
+    loadRoutes();
+  };
+
+  return (
+    <section className="panel">
+      <div className="panelHead">
+        <h2>ØªØ³Ù‡ÙŠÙ„Ø§Øª Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…</h2>
+        <p>Ø§Ù„Ù…Ø¯Ù† â† Ø§Ù„Ø£Ø­ÙŠØ§Ø¡ â† Ø§Ù„Ø´ÙˆØ§Ø±Ø¹ ÙˆØ§Ù„Ø¹Ù„Ø§Ù…Ø§Øª (ÙˆÙŠÙ…ÙƒÙ† Ø±Ø¨Ø· Ø£ÙŠ Ù…ÙƒØ§Ù† Ø¨Ù…ÙƒØ§Ù† Ø£Ø¨ Ù…Ø«Ù„: ØµÙŠØ¯Ù„ÙŠØ© Ø¯Ø§Ø®Ù„ Ø´Ø§Ø±Ø¹)ØŒ Ø«Ù… Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± Ø¨Ø£Ø³Ø¹Ø§Ø±Ù‡Ø§ Ø§Ù„Ø«Ø§Ø¨ØªØ©</p>
+      </div>
+
+      <div className="adminTabs">
+        <button className={sub === "cities" ? "on" : ""} onClick={() => setSub("cities")}>Ø§Ù„Ù…Ø¯Ù†</button>
+        <button className={sub === "districts" ? "on" : ""} onClick={() => setSub("districts")}>Ø§Ù„Ø£Ø­ÙŠØ§Ø¡</button>
+        <button className={sub === "places" ? "on" : ""} onClick={() => { setSub("places"); setPlacesView("list"); }}>Ø§Ù„Ø´ÙˆØ§Ø±Ø¹ ÙˆØ§Ù„Ø¹Ù„Ø§Ù…Ø§Øª</button>
+        <button className={sub === "routes" ? "on" : ""} onClick={() => { setSub("routes"); setRoutesView("list"); }}>Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ±</button>
+      </div>
+
+      {msg && <p className="okMsg">{msg}</p>}
+      {err && <p className="authError">{err}</p>}
+
+      {/* ===== Ø§Ù„Ù…Ø¯Ù† ===== */}
+      {sub === "cities" && (
+        <>
+          <div className="apForm">
+            <input value={cityName} placeholder="Ø§Ø³Ù… Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© â€” Ù…Ø«Ø§Ù„: Ø¨Ù†Ù‡Ø§" onChange={(e) => setCityName(e.target.value)} />
+            <button className="authSubmit" onClick={saveCity} disabled={busy}>{editCity ? "Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„" : "Ø¥Ø¶Ø§ÙØ©"}</button>
+            {editCity && <button className="wizBack" onClick={() => { setEditCity(null); setCityName(""); }}>Ø¥Ù„ØºØ§Ø¡</button>}
+          </div>
+          <div className="apList">
+            {cities.map((c) => (
+              <div className="apRow" key={c.id}>
+                <div className="apRowMain">
+                  <b>{c.name}</b>
+                  <span className="apMeta">{districts.filter((d) => d.city_id === c.id).length} Ø­ÙŠ</span>
+                </div>
+                <div className="apRowActions">
+                  <button onClick={() => { setEditCity(c); setCityName(c.name); }}>ØªØ¹Ø¯ÙŠÙ„</button>
+                  <button className="apDel" onClick={() => delCity(c)}>Ø­Ø°Ù</button>
+                </div>
+              </div>
+            ))}
+            {cities.length === 0 && <p className="emptyState">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø¯Ù† Ø¨Ø¹Ø¯</p>}
+          </div>
+        </>
+      )}
+
+      {/* ===== Ø§Ù„Ø£Ø­ÙŠØ§Ø¡ ===== */}
+      {sub === "districts" && (
+        <>
+          <div className="apForm">
+            <select value={distCity} onChange={(e) => setDistCity(e.target.value)}>
+              <option value="">Ø§Ø®ØªØ± Ø§Ù„Ù…Ø¯ÙŠÙ†Ø©...</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <input value={distName} placeholder="Ø§Ø³Ù… Ø§Ù„Ø­ÙŠ â€” Ù…Ø«Ø§Ù„: ÙƒÙØ± Ø§Ù„Ø¬Ø²Ø§Ø±" onChange={(e) => setDistName(e.target.value)} />
+            <button className="authSubmit" onClick={saveDistrict} disabled={busy}>{editDist ? "Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„" : "Ø¥Ø¶Ø§ÙØ©"}</button>
+            {editDist && <button className="wizBack" onClick={() => { setEditDist(null); setDistName(""); }}>Ø¥Ù„ØºØ§Ø¡</button>}
+          </div>
+          <div className="apList">
+            {districts.map((d) => (
+              <div className="apRow" key={d.id}>
+                <div className="apRowMain">
+                  <b>{d.name}</b>
+                  <span className="apMeta">{d.cities?.name || ""}</span>
+                </div>
+                <div className="apRowActions">
+                  <button onClick={() => { setEditDist(d); setDistName(d.name); setDistCity(d.city_id); }}>ØªØ¹Ø¯ÙŠÙ„</button>
+                  <button className="apDel" onClick={() => delDistrict(d)}>Ø­Ø°Ù</button>
+                </div>
+              </div>
+            ))}
+            {districts.length === 0 && <p className="emptyState">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£Ø­ÙŠØ§Ø¡ Ø¨Ø¹Ø¯ â€” Ø£Ø¶ÙÙ Ù…Ø¯ÙŠÙ†Ø© Ø£ÙˆÙ„Ù‹Ø§</p>}
+          </div>
+        </>
+      )}
+
+      {/* ===== Ø§Ù„Ø´ÙˆØ§Ø±Ø¹ ÙˆØ§Ù„Ø¹Ù„Ø§Ù…Ø§Øª â€” Ø´Ø§Ø´Ø© Ø§Ù„Ø¥Ø¯Ø®Ø§Ù„ ===== */}
+      {sub === "places" && placesView === "form" && (
+        <div className="apFormRoutes">
+          <div className="apFormHead">
+            <button className="wizBack" onClick={() => { resetPlaceForm(); setPlacesView("list"); }}>â†’ Ø±Ø¬ÙˆØ¹ Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£Ù…Ø§ÙƒÙ†</button>
+            <h3>{editPlace ? "ØªØ¹Ø¯ÙŠÙ„ Ù…ÙƒØ§Ù†" : "Ø¥Ø¶Ø§ÙØ© Ù…ÙƒØ§Ù† Ø¬Ø¯ÙŠØ¯"}</h3>
+          </div>
+          <div className="field">
+            <label>Ø§Ù„Ø­ÙŠ</label>
+            <select value={placeDist} onChange={(e) => setPlaceDist(e.target.value)}>
+              <option value="">Ø§Ø®ØªØ± Ø§Ù„Ø­ÙŠ...</option>
+              {districts.map((d) => <option key={d.id} value={d.id}>{d.name} â€” {d.cities?.name || ""}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Ø§Ø³Ù… Ø§Ù„Ø´Ø§Ø±Ø¹ Ø£Ùˆ Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ø£Ùˆ Ø§Ù„Ù…Ø­Ù„</label>
+            <input value={placeName} placeholder="Ù…Ø«Ø§Ù„: Ù…Ø³Ø¬Ø¯ Ø§Ù„Ù†ÙˆØ±" onChange={(e) => setPlaceName(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>ØªØ§Ø¨Ø¹ Ù„Ù…ÙƒØ§Ù†ØŸ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ â€” Ù…Ø«Ø§Ù„: Ø´Ø§Ø±Ø¹)</label>
+            <select value={placeParent} onChange={(e) => setPlaceParent(e.target.value)}>
+              <option value="">Ø¨Ø¯ÙˆÙ† â€” Ù…ÙƒØ§Ù† Ø±Ø¦ÙŠØ³ÙŠ</option>
+              {places.filter((p) => p.id !== editPlace?.id).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.districts?.name ? ` â€” ${p.districts.name}` : ""}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Ø§Ù„Ø¥Ø­Ø¯Ø§Ø«ÙŠØ§Øª (Ø§Ù„ØµÙ‚ Ù…Ù† Ø®Ø±Ø§Ø¦Ø· Ø¬ÙˆØ¬Ù„)</label>
+            <input value={placeCoords} placeholder="30.4706813, 31.1844191"
+              style={{ direction: "ltr", textAlign: "left" }}
+              onChange={(e) => setPlaceCoords(e.target.value)} />
+          </div>
+          <button className="authSubmit" onClick={savePlace} disabled={busy}>{editPlace ? "Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„" : "Ø­ÙØ¸ Ø§Ù„Ù…ÙƒØ§Ù†"}</button>
+        </div>
+      )}
+
+      {/* ===== Ø§Ù„Ø´ÙˆØ§Ø±Ø¹ ÙˆØ§Ù„Ø¹Ù„Ø§Ù…Ø§Øª â€” Ø´Ø§Ø´Ø© Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ===== */}
+      {sub === "places" && placesView === "list" && (
+        <>
+          <div className="apTools">
+            <button className="authSubmit" onClick={openNewPlace}>ï¼‹ Ø¥Ø¶Ø§ÙØ© Ù…ÙƒØ§Ù† Ø¬Ø¯ÙŠØ¯</button>
+            <button className="offerPlus" onClick={() => downloadCsv("Ù‚Ø§Ù„Ø¨-Ø§Ù„Ø§Ù…Ø§ÙƒÙ†.csv", [
+              ["Ø§Ù„Ù…Ø¯ÙŠÙ†Ø©", "Ø§Ù„Ø­ÙŠ", "Ø§Ø³Ù… Ø§Ù„Ù…ÙƒØ§Ù†", "Ø®Ø· Ø§Ù„Ø¹Ø±Ø¶ lat", "Ø®Ø· Ø§Ù„Ø·ÙˆÙ„ lng", "ØªØ§Ø¨Ø¹ Ù„Ù…ÙƒØ§Ù† (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)"],
+              ["Ø¨Ù†Ù‡Ø§", "Ø§Ù„ÙÙ„Ù„", "Ø§Ù„ÙÙ„Ù„ Ø´Ø§Ø±Ø¹ 5", "30.4597", "31.1886", ""],
+              ["Ø¨Ù†Ù‡Ø§", "Ø§Ù„ÙÙ„Ù„", "Ù…Ø³Ø¬Ø¯ Ø§Ù„Ù†ÙˆØ±", "30.4600", "31.1890", "Ø§Ù„ÙÙ„Ù„ Ø´Ø§Ø±Ø¹ 5"],
+              ["Ø¨Ù†Ù‡Ø§", "Ø§Ù„ÙÙ„Ù„", "ØµÙŠØ¯Ù„ÙŠØ© Ø§Ù„Ø´ÙØ§Ø¡", "30.4602", "31.1892", "Ø§Ù„ÙÙ„Ù„ Ø´Ø§Ø±Ø¹ 5"],
+            ])}>â¬‡ ØªØ­Ù…ÙŠÙ„ Ù‚Ø§Ù„Ø¨ CSV</button>
+            <button className="offerMain" onClick={() => placesFileRef.current?.click()} disabled={busy}>
+              {busy ? "Ø¬Ø§Ø±Ù Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯..." : "â¬† Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ø£Ù…Ø§ÙƒÙ† Ù…Ù† CSV"}
+            </button>
+            <input ref={placesFileRef} type="file" accept=".csv" hidden
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) importPlacesCsv(f); e.target.value = ""; }} />
+          </div>
+
+          {/* ÙÙ„Ø§ØªØ± Ø§Ù„ØªØµÙÙŠØ© */}
+          <div className="apFilters">
+            <select value={pCity} onChange={(e) => { setPCity(e.target.value); setPDist(""); setPParent(""); setPlacePage(1); }}>
+              <option value="">ÙƒÙ„ Ø§Ù„Ù…Ø¯Ù†</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select value={pDist} onChange={(e) => { setPDist(e.target.value); setPParent(""); setPlacePage(1); }}>
+              <option value="">ÙƒÙ„ Ø§Ù„Ø£Ø­ÙŠØ§Ø¡</option>
+              {placeFilterDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <select value={pParent} onChange={(e) => { setPParent(e.target.value); setPlacePage(1); }}>
+              <option value="">Ø§Ù„ØªØ§Ø¨Ø¹Ø© Ù„Ù…ÙƒØ§Ù†...</option>
+              {parentFilterPlaces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {(pCity || pDist || pParent) && (
+              <button className="wizBack" onClick={() => { setPCity(""); setPDist(""); setPParent(""); setPlacePage(1); }}>Ù…Ø³Ø­ Ø§Ù„ÙÙ„Ø§ØªØ±</button>
+            )}
+          </div>
+
+          <div className="apList">
+            {pagedPlaces.map((p) => (
+              <div className="apRow" key={p.id}>
+                <div className="apRowMain">
+                  <b>{p.name}</b>
+                  <span className="apMeta">
+                    {p.parent?.name ? `ØªØ§Ø¨Ø¹ Ù„Ù€ ${p.parent.name} â€” ` : ""}
+                    {p.districts?.name ? `${p.districts.name} â€” ` : ""}{p.districts?.cities?.name || "Ø¨Ø¯ÙˆÙ† Ø­ÙŠ"}
+                    {places.filter((s) => s.parent_place_id === p.id).length > 0 && ` Â· ${places.filter((s) => s.parent_place_id === p.id).length} Ù…ÙƒØ§Ù† ØªØ§Ø¨Ø¹`}
+                  </span>
+                </div>
+                <div className="apRowActions">
+                  <button onClick={() => openEditPlace(p)}>ØªØ¹Ø¯ÙŠÙ„</button>
+                  <button className="apDel" onClick={() => delPlace(p)}>Ø­Ø°Ù</button>
+                </div>
+              </div>
+            ))}
+            {pagedPlaces.length === 0 && <p className="emptyState">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£Ù…Ø§ÙƒÙ† Ù…Ø·Ø§Ø¨Ù‚Ø© â€” Ø£Ø¶ÙÙ Ù…ÙƒØ§Ù†Ù‹Ø§ Ø¬Ø¯ÙŠØ¯Ù‹Ø§</p>}
+          </div>
+
+          <Pager page={placePg} totalPages={placesPages} onPage={setPlacePage} />
+          <p className="apCount">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£Ù…Ø§ÙƒÙ†: {filteredPlaces.length}{filteredPlaces.length !== places.length ? ` (Ù…Ù† Ø£ØµÙ„ ${places.length})` : ""}</p>
+        </>
+      )}
+
+      {/* ===== Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± â€” Ø´Ø§Ø´Ø© Ø§Ù„Ø¥Ø¯Ø®Ø§Ù„ ===== */}
+      {sub === "routes" && routesView === "form" && (
+        <div className="apFormRoutes">
+          <div className="apFormHead">
+            <button className="wizBack" onClick={() => { resetRouteForm(); setRoutesView("list"); }}>â†’ Ø±Ø¬ÙˆØ¹ Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ±</button>
+            <h3>{editRoute ? "ØªØ¹Ø¯ÙŠÙ„ Ù…Ø´ÙˆØ§Ø±" : "Ø¥Ø¶Ø§ÙØ© Ù…Ø´ÙˆØ§Ø± Ø¬Ø¯ÙŠØ¯"}</h3>
+          </div>
+          <div className="field">
+            <label>Ø§Ø³Ù… Ø§Ù„Ù…Ø´ÙˆØ§Ø± (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>
+            <input value={routeName} placeholder="Ù…Ø«Ø§Ù„: Ù…Ø´ÙˆØ§Ø± Ø§Ù„Ø¬Ø§Ù…Ø¹Ø©" onChange={(e) => setRouteName(e.target.value)} />
+          </div>
+          <PlaceSearch label="Ù…Ù†" value={routeFrom} onPick={setRouteFrom} excludeId={routeTo?.id} />
+          <PlaceSearch label="Ø¥Ù„Ù‰" value={routeTo} onPick={setRouteTo} excludeId={routeFrom?.id} />
+          <div className="row2">
+            <div className="field">
+              <label>Ø§Ù„Ø³Ø¹Ø± (Ø¬.Ù…)</label>
+              <input value={routePrice} inputMode="decimal" placeholder="Ù…Ø«Ø§Ù„: 15" onChange={(e) => setRoutePrice(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Ø³Ø¹Ø± Ø§Ù„Ø¹ÙˆØ¯Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ â€” ÙØ§Ø±Øº = Ù†ÙØ³ Ø§Ù„Ø³Ø¹Ø±)</label>
+              <input value={routeRev} inputMode="decimal" placeholder="Ù…Ø«Ø§Ù„: 20" onChange={(e) => setRouteRev(e.target.value)} />
+            </div>
+          </div>
+          <div className="field">
+            <label>Ù…Ù„Ø§Ø­Ø¸Ø§Øª (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>
+            <input value={routeNotes} placeholder="Ø£ÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¹Ù† Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´ÙˆØ§Ø±" onChange={(e) => setRouteNotes(e.target.value)} />
+          </div>
+          <button className="authSubmit" onClick={saveRoute} disabled={busy}>{editRoute ? "Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„" : "Ø­ÙØ¸ Ø§Ù„Ù…Ø´ÙˆØ§Ø±"}</button>
+        </div>
+      )}
+
+      {/* ===== Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± â€” Ø´Ø§Ø´Ø© Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ===== */}
+      {sub === "routes" && routesView === "list" && (
+        <>
+          {/* Ù…ÙØªØ§Ø­ Ø¥Ø¸Ù‡Ø§Ø±/Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø¹Ù…ÙŠÙ„ */}
+          <div className="apToggle">
+            <div>
+              <b>Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø§Ø¦Ù…Ø© Â«Ù…Ø´Ø§ÙˆÙŠØ± Ø¨Ø£Ø³Ø¹Ø§Ø± Ø«Ø§Ø¨ØªØ©Â» ÙÙŠ Ø´Ø§Ø´Ø© Ø§Ù„Ø¹Ù…ÙŠÙ„</b>
+              <small>Ø¹Ù†Ø¯ Ø§Ù„Ø¥Ø®ÙØ§Ø¡ ÙŠØ¨Ù‚Ù‰ Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø«Ø§Ø¨Øª Ù…Ø·Ø¨Ù‚Ù‹Ø§ ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ØŒ Ù„ÙƒÙ† Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¬Ø§Ù‡Ø²Ø© Ù„Ø§ ØªØ¸Ù‡Ø±</small>
+            </div>
+            <label className="switch">
+              <input type="checkbox" checked={showFixedRoutes} onChange={(e) => toggleFixedRoutes(e.target.checked)} />
+              <span className="track" />
+            </label>
+          </div>
+
+          <div className="apTools">
+            <button className="authSubmit" onClick={openNewRoute}>ï¼‹ Ø¥Ø¶Ø§ÙØ© Ù…Ø´ÙˆØ§Ø± Ø¬Ø¯ÙŠØ¯</button>
+            <button className="offerPlus" onClick={() => downloadCsv("Ù‚Ø§Ù„Ø¨-Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ±.csv", [
+              ["Ù…Ù†", "Ø¥Ù„Ù‰", "Ø§Ù„Ø³Ø¹Ø±", "Ø³Ø¹Ø± Ø§Ù„Ø¹ÙˆØ¯Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)", "Ù…Ù„Ø§Ø­Ø¸Ø§Øª"],
+              ["Ù…Ø­Ø·Ø© Ù‚Ø·Ø§Ø± Ø¨Ù†Ù‡Ø§", "Ø¬Ø§Ù…Ø¹Ø© Ø¨Ù†Ù‡Ø§", "15", "", "Ø£Ø³Ø¹Ø§Ø± Ø«Ø§Ø¨ØªØ©"],
+            ])}>â¬‡ ØªØ­Ù…ÙŠÙ„ Ù‚Ø§Ù„Ø¨ CSV</button>
+            <button className="offerMain" onClick={() => routesFileRef.current?.click()} disabled={busy}>
+              {busy ? "Ø¬Ø§Ø±Ù Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯..." : "â¬† Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ± Ù…Ù† CSV"}
+            </button>
+            <input ref={routesFileRef} type="file" accept=".csv" hidden
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) importRoutesCsv(f); e.target.value = ""; }} />
+          </div>
+
+          {/* ÙÙ„Ø§ØªØ± Ø§Ù„ØªØµÙÙŠØ© */}
+          <div className="apFilters">
+            <select value={fCity} onChange={(e) => { setFCity(e.target.value); setFDist(""); setFPlace(""); setRoutePage(1); }}>
+              <option value="">ÙƒÙ„ Ø§Ù„Ù…Ø¯Ù†</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select value={fDist} onChange={(e) => { setFDist(e.target.value); setFPlace(""); setRoutePage(1); }}>
+              <option value="">ÙƒÙ„ Ø§Ù„Ø£Ø­ÙŠØ§Ø¡</option>
+              {filterDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <select value={fPlace} onChange={(e) => { setFPlace(e.target.value); setRoutePage(1); }}>
+              <option value="">ÙƒÙ„ Ø§Ù„Ø¹Ù„Ø§Ù…Ø§Øª</option>
+              {filterPlaces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {(fCity || fDist || fPlace) && (
+              <button className="wizBack" onClick={() => { setFCity(""); setFDist(""); setFPlace(""); setRoutePage(1); }}>Ù…Ø³Ø­ Ø§Ù„ÙÙ„Ø§ØªØ±</button>
+            )}
+          </div>
+
+          <div className="apList">
+            {pagedRoutes.map((r) => (
+              <div className="apRow" key={r.id}>
+                <div className="apRowMain">
+                  <b>{r.name || `${r.from_place?.name || "ØŸ"} â† ${r.to_place?.name || "ØŸ"}`}</b>
+                  <span className="apMeta">
+                    {r.from_place?.name} â† {r.to_place?.name} Â· {Number(r.price).toFixed(0)} Ø¬
+                    {r.reverse_price ? ` (Ø¹ÙˆØ¯Ø© ${Number(r.reverse_price).toFixed(0)} Ø¬)` : ""}
+                    {r.notes ? ` â€” ${r.notes}` : ""}
+                  </span>
+                </div>
+                <div className="apRowActions">
+                  <button onClick={() => openEditRoute(r)}>ØªØ¹Ø¯ÙŠÙ„</button>
+                  <button className="apDel" onClick={() => delRoute(r)}>Ø­Ø°Ù</button>
+                </div>
+              </div>
+            ))}
+            {pagedRoutes.length === 0 && <p className="emptyState">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø´Ø§ÙˆÙŠØ± Ù…Ø·Ø§Ø¨Ù‚Ø© â€” Ø£Ø¶ÙÙ Ù…Ø´ÙˆØ§Ø±Ù‹Ø§ Ø¬Ø¯ÙŠØ¯Ù‹Ø§</p>}
+          </div>
+
+          <Pager page={routePg} totalPages={routesPages} onPage={setRoutePage} />
+          <p className="apCount">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø´Ø§ÙˆÙŠØ±: {filteredRoutes.length}{filteredRoutes.length !== routes.length ? ` (Ù…Ù† Ø£ØµÙ„ ${routes.length})` : ""}</p>
+        </>
+      )}
+    </section>
+  );
+}
