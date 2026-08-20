@@ -25,6 +25,10 @@ export default function CustomerApp() {
   const [pickupAddr, setPickupAddr] = useState("");
   const [dropoff, setDropoff] = useState<LatLng | null>(null);
   const [dropoffAddr, setDropoffAddr] = useState("");
+  // معرّفا المكانين المعروفين (لو اختارهما العميل من التلميحات) — لتفعيل السعر الثابت
+  const [pickupPlaceId, setPickupPlaceId] = useState<string | null>(null);
+  const [dropoffPlaceId, setDropoffPlaceId] = useState<string | null>(null);
+  const [fixedPrice, setFixedPrice] = useState<number | null>(null);
   // نقاط توقف اختيارية (حتى 3) بين الانطلاق والوجهة
   const [stops, setStops] = useState<StopEntry[]>([]);
 
@@ -54,6 +58,13 @@ export default function CustomerApp() {
       if (data) setSettings(data as Settings);
     });
   }, []);
+
+  // السعر الثابت: لو المكانان معروفان ولهما سعر مسجل (الاتجاهان) يظهر بأولوية
+  useEffect(() => {
+    if (!pickupPlaceId || !dropoffPlaceId || stops.length > 0) { setFixedPrice(null); return; }
+    supabase.rpc("fixed_route_price", { p_from: pickupPlaceId, p_to: dropoffPlaceId })
+      .then(({ data }) => setFixedPrice(typeof data === "number" ? data : null));
+  }, [pickupPlaceId, dropoffPlaceId, stops.length]);
 
   // المسافة = مجموع المراحل: انطلاق ← كل توقف محدد ← وجهة
   useEffect(() => {
@@ -89,12 +100,14 @@ export default function CustomerApp() {
       p_dropoff_lng: dropoff.lng, p_dropoff_lat: dropoff.lat, p_dropoff_address: dropoffAddr,
       p_distance_km: distance, p_kind: kind,
       p_stops: stops.filter((s) => s.loc).map((s) => ({ lat: s.loc!.lat, lng: s.loc!.lng, address: s.addr })),
+      p_from_place_id: pickupPlaceId, p_to_place_id: dropoffPlaceId,
     });
     setBusy(false);
 
     if (error) { setErr("تعذّر إنشاء الطلب: " + error.message); return; }
     setMsg("تم إرسال طلبك ✓ جارٍ البحث عن كابتن قريب");
     setPickup(null); setPickupAddr(""); setDropoff(null); setDropoffAddr("");
+    setPickupPlaceId(null); setDropoffPlaceId(null); setFixedPrice(null);
     setStops([]);
     setDistance(null); setFare(null);
     checkActive();
@@ -104,6 +117,7 @@ export default function CustomerApp() {
   const pickFavorite = (t: { pickup: LatLng; pickupAddr: string; dropoff: LatLng; dropoffAddr: string }) => {
     setPickup(t.pickup); setPickupAddr(t.pickupAddr);
     setDropoff(t.dropoff); setDropoffAddr(t.dropoffAddr);
+    setPickupPlaceId(null); setDropoffPlaceId(null); setFixedPrice(null);
     setStops([]);
     setTab("home");
   };
@@ -137,7 +151,8 @@ export default function CustomerApp() {
                 </div>
 
                 <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
-                  onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }} />
+                  onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); }}
+                  onPlaceSelect={setPickupPlaceId} />
 
                 {/* نقاط التوقف الاختيارية (حتى 3) */}
                 {stops.map((s, i) => (
@@ -158,7 +173,8 @@ export default function CustomerApp() {
                 )}
 
                 <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
-                  onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }} />
+                  onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); }}
+                  onPlaceSelect={setDropoffPlaceId} />
 
                 <div className="field">
                   <label>نوع الرحلة</label>
@@ -174,8 +190,9 @@ export default function CustomerApp() {
                     <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <span>السعر المقترح</span>
-                    <b>{fare != null ? `${fare.toFixed(2)} ج.م` : "—"}</b>
+                    <span>{fixedPrice != null ? "السعر" : "السعر المقترح"}</span>
+                    <b>{(fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(2)} ج.م` : "—"}</b>
+                    {fixedPrice != null && <span className="fixedFareTag">سعر ثابت</span>}
                   </div>
                 </div>
 
