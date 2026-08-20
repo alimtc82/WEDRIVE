@@ -9,32 +9,55 @@
 /* شارة السعر الثابت في صندوق الأجرة */
 .fixedFareTag{display:inline-block;font-size:11px;font-weight:700;color:#04241c;background:var(--green);padding:3px 10px;border-radius:12px;margin-top:4px}
 
-/* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.13.0) ===== */
+/* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.14.1) ===== */
+
+/* حماية عامة من الطفح خارج التصميم */
+.panel,.panel *{box-sizing:border-box}
+.panel input,.panel select,.panel button{max-width:100%}
+.panel select{min-width:0}
 
 /* نماذج الإضافة والتعديل */
 .apForm{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .apForm input{flex:1;min-width:160px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
-.apForm select{flex:1;min-width:160px}
+.apForm select{flex:1;min-width:160px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
 .apForm .authSubmit{flex:none;min-width:110px;margin-top:0}
 .apForm .wizBack{flex:none;min-width:80px;padding:11px}
 .apFormGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .apFormGrid .authSubmit{grid-column:1/-1}
 .apFormRoutes{margin-bottom:14px}
-.apFormRoutes .authSubmit{margin-top:4px}
+.apFormRoutes .authSubmit{margin-top:4px;width:100%}
+.apFormHead{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.apFormHead h3{margin:0;font-size:16px;color:var(--ink);flex:1;min-width:0}
+.apFormHead .wizBack{flex:none;padding:9px 14px;font-size:13px}
 
 /* أزرار الاستيراد والقوالب */
 .apTools{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.apTools button{flex:1;min-width:150px;padding:11px;font-size:13px}
+.apTools button{flex:1;min-width:130px;padding:11px;font-size:13px;margin-top:0}
 
-/* قوائم العرض */
+/* فلاتر التصفية أعلى القائمة */
+.apFilters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.apFilters select{flex:1;min-width:120px;padding:10px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:13px}
+.apFilters .wizBack{flex:none;padding:10px 14px;font-size:12px}
+
+/* قوائم العرض — صف منظم: محتوى يمين + أزرار يسار، بدون طفح */
 .apList{display:flex;flex-direction:column;gap:8px}
-.apRow{display:flex;align-items:center;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.apRow b{font-size:14px;flex:none}
-.apMeta{flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.apRow button{flex:none;padding:7px 14px;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;cursor:pointer;font-size:12px}
-.apRow button:hover{border-color:var(--green);color:var(--ink)}
-.apRow .apDel{border-color:var(--danger);color:var(--danger)}
-.apRow .apDel:hover{background:rgba(226,86,74,.1)}
+.apRow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.apRowMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.apRowMain b{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.apMeta{font-size:12px;color:var(--muted);overflow-wrap:anywhere;line-height:1.5}
+.apRowActions{flex:none;display:flex;gap:6px}
+.apRowActions button{padding:7px 14px;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap}
+.apRowActions button:hover{border-color:var(--green);color:var(--ink)}
+.apRowActions .apDel{border-color:var(--danger);color:var(--danger)}
+.apRowActions .apDel:hover{background:rgba(226,86,74,.1)}
+
+/* ترقيم الصفحات */
+.apPager{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:14px;flex-wrap:wrap}
+.apPager button{min-width:36px;padding:8px 10px;background:var(--navy);border:1px solid var(--line);color:var(--muted);border-radius:8px;cursor:pointer;font-size:13px}
+.apPager button:hover:not(:disabled){border-color:var(--green);color:var(--ink)}
+.apPager button.on{background:var(--green);color:#04241c;border-color:var(--green);font-weight:700}
+.apPager button:disabled{opacity:.4;cursor:not-allowed}
+.apCount{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
 
 /* البحث الذكي في المشاوير */
 .psField{margin-bottom:12px;position:relative}
@@ -52,3 +75,9 @@
 .psPicked b{font-size:14px}
 .psPicked small{color:var(--muted);font-size:11px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .psClear{flex:none;background:transparent;border:0;color:var(--danger);cursor:pointer;font-size:14px;padding:4px}
+
+/* موبايل: الأزرار تحت المحتوى في صف القائمة */
+@media (max-width:520px){
+  .apRow{flex-direction:column;align-items:stretch}
+  .apRowActions{justify-content:flex-start}
+}
