@@ -134,18 +134,14 @@ function MapPanel({
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
   }, [value, autoLocate, setMarker, onChange, onPlaceSelect]);
 
-  // تلميحات الأماكن المعروفة الملونة أثناء الكتابة (من قاعدة البيانات، بأولوية على نتائج الخريطة)
+  // تلميحات الأماكن المعروفة أثناء الكتابة — بحث عربي متسامح (يظهر من أول حرف)
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setLocalPlaces([]); return; }
+    if (q.length < 1) { setLocalPlaces([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("places")
-        .select("id,name,lat,lng")
-        .ilike("name", `%${q}%`)
-        .limit(5);
+      const { data } = await supabase.rpc("search_places", { p_query: q });
       setLocalPlaces((data as KnownPlace[]) || []);
-    }, 250);
+    }, 200);
     return () => clearTimeout(t);
   }, [query]);
 
