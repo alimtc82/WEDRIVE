@@ -2,5 +2,12 @@
   "appId": "online.mtcgroup.captainbanha",
   "appName": "كابتن بنها",
   "webDir": "dist/client",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DARK",
+      "backgroundColor": "#16213e"
+    }
+  }
 }
