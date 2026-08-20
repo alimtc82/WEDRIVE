@@ -6,3 +6,47 @@
 
 /* شارة السعر الثابت في صندوق الأجرة */
 .fixedFareTag{display:inline-block;font-size:11px;font-weight:700;color:#04241c;background:var(--green);padding:3px 10px;border-radius:12px;margin-top:4px}
+
+/* ===== تسهيلات الاستخدام — لوحة الأدمن (v1.13.0) ===== */
+
+/* نماذج الإضافة والتعديل */
+.apForm{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.apForm input{flex:1;min-width:160px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
+.apForm select{flex:1;min-width:160px}
+.apForm .authSubmit{flex:none;min-width:110px;margin-top:0}
+.apForm .wizBack{flex:none;min-width:80px;padding:11px}
+.apFormGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.apFormGrid .authSubmit{grid-column:1/-1}
+.apFormRoutes{margin-bottom:14px}
+.apFormRoutes .authSubmit{margin-top:4px}
+
+/* أزرار الاستيراد والقوالب */
+.apTools{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.apTools button{flex:1;min-width:150px;padding:11px;font-size:13px}
+
+/* قوائم العرض */
+.apList{display:flex;flex-direction:column;gap:8px}
+.apRow{display:flex;align-items:center;gap:10px;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.apRow b{font-size:14px;flex:none}
+.apMeta{flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.apRow button{flex:none;padding:7px 14px;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;cursor:pointer;font-size:12px}
+.apRow button:hover{border-color:var(--green);color:var(--ink)}
+.apRow .apDel{border-color:var(--danger);color:var(--danger)}
+.apRow .apDel:hover{background:rgba(226,86,74,.1)}
+
+/* البحث الذكي في المشاوير */
+.psField{margin-bottom:12px;position:relative}
+.psField>label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+.psField input{width:100%;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
+.psField input:focus{outline:none;border-color:var(--green)}
+.psList{list-style:none;margin:6px 0 0;padding:0;background:var(--card);border:1px solid var(--green);border-radius:9px;max-height:200px;overflow:auto;position:relative;z-index:20}
+.psList li{padding:10px 12px;font-size:14px;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line)}
+.psList li:last-child{border-bottom:0}
+.psList li:hover{background:var(--navy)}
+.psList li small{color:var(--muted);font-size:11px}
+.hl{background:rgba(31,191,143,.35);color:#9ff0d6;border-radius:3px;padding:0 2px;font-weight:700}
+.psEmpty{font-size:12px;color:#f5b73d;margin:6px 0 0}
+.psPicked{display:flex;align-items:center;gap:8px;background:rgba(31,191,143,.1);border:1px solid var(--green);border-radius:9px;padding:10px 12px}
+.psPicked b{font-size:14px}
+.psPicked small{color:var(--muted);font-size:11px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.psClear{flex:none;background:transparent;border:0;color:var(--danger);cursor:pointer;font-size:14px;padding:4px}
