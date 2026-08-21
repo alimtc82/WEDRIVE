@@ -4,9 +4,10 @@
   --danger:#e2564a; --accent:#3b82f6; --radius:12px;
 }
 *{box-sizing:border-box}
-html,body,#root{width:100%;min-height:100%;max-width:100%;overflow-x:hidden}
+/* overflow-x:clip يثبّت الجوانب فقط دون كسر التمرير الرأسي داخل WebView — hidden احتياطي للمتصفحات القديمة */
+html,body,#root{width:100%;min-height:100%;max-width:100%;overflow-x:hidden;overflow-x:clip}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:var(--navy);color:var(--ink);overscroll-behavior-y:none;touch-action:manipulation}
+body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:var(--navy);color:var(--ink);touch-action:manipulation}
 input,button{font-family:inherit}
 
 .fullCenter{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)}
