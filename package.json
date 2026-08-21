@@ -1,6 +1,6 @@
 {
   "name": "captain-banha",
-  "version": "1.16.5",
+  "version": "1.16.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -32,4 +32,3 @@
     "vitest": "^3.2.4"
   }
 }
-
