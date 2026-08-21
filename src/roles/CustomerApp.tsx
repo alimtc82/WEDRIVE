@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import type { Settings, TripKind } from "../lib/types";
-import { haversineKm, guessKind, type LatLng } from "../lib/geo";
+import { drivingRouteKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
 import MapPicker, { RouteMapPicker } from "../components/MapPicker";
 import ActiveTrip from "../components/ActiveTrip";
@@ -32,14 +32,11 @@ export default function CustomerApp() {
   const [pickupAddr, setPickupAddr] = useState("");
   const [dropoff, setDropoff] = useState<LatLng | null>(null);
   const [dropoffAddr, setDropoffAddr] = useState("");
-  // معرّفا المكانين المعروفين (لو اختارهما العميل من التلميحات) — لتفعيل السعر الثابت
   const [pickupPlaceId, setPickupPlaceId] = useState<string | null>(null);
   const [dropoffPlaceId, setDropoffPlaceId] = useState<string | null>(null);
   const [fixedPrice, setFixedPrice] = useState<number | null>(null);
-  // نقاط توقف اختيارية (حتى 3) بين الانطلاق والوجهة
   const [stops, setStops] = useState<StopEntry[]>([]);
 
-  // قائمة المشاوير الثابتة — تظهر فقط لو الأدمن فعّلها
   const [showFixedRoutes, setShowFixedRoutes] = useState(false);
   const [fixedRoutes, setFixedRoutes] = useState<FixedRoute[]>([]);
   const [pickedRouteId, setPickedRouteId] = useState<string | null>(null);
@@ -47,6 +44,8 @@ export default function CustomerApp() {
   const [kind, setKind] = useState<TripKind>("in_city");
   const [distance, setDistance] = useState<number | null>(null);
   const [fare, setFare] = useState<number | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -82,26 +81,50 @@ export default function CustomerApp() {
     });
   }, []);
 
-  // السعر الثابت: لو المكانان معروفان ولهما سعر مسجل (الاتجاهان) يظهر بأولوية
   useEffect(() => {
     if (!pickupPlaceId || !dropoffPlaceId || stops.length > 0) { setFixedPrice(null); return; }
     supabase.rpc("fixed_route_price", { p_from: pickupPlaceId, p_to: dropoffPlaceId })
       .then(({ data }) => setFixedPrice(typeof data === "number" ? data : null));
   }, [pickupPlaceId, dropoffPlaceId, stops.length]);
 
-  // المسافة = مجموع المراحل: انطلاق ← كل توقف محدد ← وجهة
+  // التسعير يعتمد على مسافة القيادة الفعلية على شبكة الطرق، وليس الخط المستقيم.
   useEffect(() => {
-    if (!pickup || !dropoff || !settings) { setDistance(null); setFare(null); return; }
-    const pts: LatLng[] = [pickup, ...stops.filter((s) => s.loc).map((s) => s.loc!), dropoff];
-    let d = 0;
-    for (let i = 0; i < pts.length - 1; i++) d += haversineKm(pts[i], pts[i + 1]);
-    d = Math.round(d * 100) / 100;
-    setDistance(d);
-    const k = guessKind(d);
-    setKind(k);
-    const ppk = k === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
-    const raw = Math.round(d * ppk * 100) / 100;
-    setFare(Math.max(raw, settings.min_fare));
+    let cancelled = false;
+    if (!pickup || !dropoff || !settings || stops.some((s) => !s.loc)) {
+      setDistance(null);
+      setFare(null);
+      setRouteLoading(false);
+      setRouteError("");
+      return;
+    }
+
+    const points: LatLng[] = [pickup, ...stops.map((s) => s.loc!), dropoff];
+    setRouteLoading(true);
+    setRouteError("");
+    setDistance(null);
+    setFare(null);
+
+    drivingRouteKm(points)
+      .then((d) => {
+        if (cancelled) return;
+        setDistance(d);
+        const k = guessKind(d);
+        setKind(k);
+        const ppk = k === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
+        const raw = Math.round(d * ppk * 100) / 100;
+        setFare(Math.max(raw, settings.min_fare));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDistance(null);
+        setFare(null);
+        setRouteError("تعذّر حساب مسافة الطريق الآن. تحقق من الإنترنت ثم أعد تحديد الوجهة.");
+      })
+      .finally(() => {
+        if (!cancelled) setRouteLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [pickup, dropoff, stops, settings]);
 
   useEffect(() => {
@@ -111,7 +134,6 @@ export default function CustomerApp() {
     setFare(Math.max(raw, settings.min_fare));
   }, [kind, distance, settings]);
 
-  // اختيار مشوار ثابت من القائمة — يعبّي الانطلاق والوجهة ومعرّفَي المكانين لتفعيل السعر الثابت
   const pickFixedRoute = (r: FixedRoute, reversed: boolean) => {
     const from = reversed
       ? { id: r.to_place_id, name: r.to_name, lat: r.to_lat, lng: r.to_lng }
@@ -130,7 +152,8 @@ export default function CustomerApp() {
     setErr(""); setMsg("");
     if (!pickup || !dropoff) { setErr("حدّد مكان الانطلاق والوجهة على الخريطة"); return; }
     if (stops.some((s) => !s.loc)) { setErr("حدّد مكان كل نقاط التوقف أو احذفها"); return; }
-    if (distance == null || distance <= 0) { setErr("تعذّر حساب المسافة"); return; }
+    if (routeLoading) { setErr("انتظر حتى يكتمل حساب مسافة الطريق"); return; }
+    if (routeError || distance == null || distance <= 0) { setErr(routeError || "تعذّر حساب مسافة الطريق"); return; }
 
     setBusy(true);
     const { error } = await supabase.rpc("create_trip", {
@@ -147,11 +170,10 @@ export default function CustomerApp() {
     setPickup(null); setPickupAddr(""); setDropoff(null); setDropoffAddr("");
     setPickupPlaceId(null); setDropoffPlaceId(null); setFixedPrice(null);
     setStops([]); setPickedRouteId(null);
-    setDistance(null); setFare(null);
+    setDistance(null); setFare(null); setRouteError("");
     checkActive();
   };
 
-  // اختيار رحلة مفضلة — يعبّي نقاط الانطلاق والوجهة ويرجع للرئيسية
   const pickFavorite = (t: { pickup: LatLng; pickupAddr: string; dropoff: LatLng; dropoffAddr: string }) => {
     setPickup(t.pickup); setPickupAddr(t.pickupAddr);
     setDropoff(t.dropoff); setDropoffAddr(t.dropoffAddr);
@@ -188,7 +210,6 @@ export default function CustomerApp() {
                   <p>أهلاً {profile?.full_name || ""}، حدّد وجهتك وسنبحث لك عن أقرب كابتن</p>
                 </div>
 
-                {/* قائمة المشاوير بأسعار ثابتة — تظهر لو الأدمن فعّلها */}
                 {showFixedRoutes && fixedRoutes.length > 0 && (
                   <div className="fixedRoutes">
                     <h3 className="frTitle">مشاوير بأسعار ثابتة</h3>
@@ -228,7 +249,6 @@ export default function CustomerApp() {
                   onPickupPlaceSelect={setPickupPlaceId}
                   onDropoffPlaceSelect={setDropoffPlaceId} />
 
-                {/* نقاط التوقف الاختيارية (حتى 3) */}
                 {stops.map((s, i) => (
                   <div className="stopRow" key={i}>
                     <MapPicker label={`نقطة توقف ${i + 1}`} color="amber" value={s.loc} address={s.addr}
@@ -256,20 +276,21 @@ export default function CustomerApp() {
 
                 <div className="fareBox">
                   <div>
-                    <span>المسافة{stops.length > 0 ? " (شاملة التوقفات)" : ""}</span>
-                    <b className="distVal">{distance != null ? `${distance} كم` : "—"}</b>
+                    <span>مسافة الطريق{stops.length > 0 ? " (شاملة التوقفات)" : ""}</span>
+                    <b className="distVal">{routeLoading ? "جارٍ الحساب..." : distance != null ? `${distance} كم` : "—"}</b>
                   </div>
                   <div style={{ textAlign: "left" }}>
                     <span>السعر المقترح</span>
-                    <b>{(fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(2)} ج.م` : "—"}</b>
+                    <b>{routeLoading ? "..." : (fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(2)} ج.م` : "—"}</b>
                   </div>
                 </div>
 
+                {routeError && <p className="authError" role="alert">{routeError}</p>}
                 {err && <p className="authError" role="alert">{err}</p>}
                 {msg && <p className="okMsg" role="status">{msg}</p>}
 
-                <button className="cta" onClick={requestTrip} disabled={busy}>
-                  {busy ? "جارٍ الإرسال..." : "اطلب رحلة"}
+                <button className="cta" onClick={requestTrip} disabled={busy || routeLoading || !distance || !!routeError}>
+                  {busy ? "جارٍ الإرسال..." : routeLoading ? "جارٍ حساب الطريق..." : "اطلب رحلة"}
                 </button>
               </section>
             )}
