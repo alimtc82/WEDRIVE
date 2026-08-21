@@ -67,7 +67,8 @@ export default function AdminOnlineCaptains({ onBack }: { onBack: () => void }) 
       setError("");
     }
 
-    if (showLoading) setLoading(false);
+    // Any accepted latest response completes the visible initial load.
+    setLoading(false);
   }, [appliedQuery, page]);
 
   useEffect(() => {
