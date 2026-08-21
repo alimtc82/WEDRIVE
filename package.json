@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts --configLoader runner",
     "check": "npm run typecheck && npm test && npm run build",
