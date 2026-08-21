@@ -8,13 +8,17 @@ import "./customerMapPlanner.css";
 
 type KnownPlace = { id: string; name: string; lat: number; lng: number; district_name: string | null; city_name: string | null; parent_name: string | null };
 type SearchResult = { key: string; name: string; context: string; loc: LatLng; placeId: string | null; source: "saved" | "map" };
-type Stage = "pickup" | "dropoff" | "done";
+type Stage = "pickup" | "dropoff" | "stop" | "done";
+type StopEntry = { loc: LatLng | null; addr: string };
 
 type Props = {
   pickup: LatLng | null;
   pickupAddress: string;
   dropoff: LatLng | null;
   dropoffAddress: string;
+  stops?: StopEntry[];
+  stopRequestKey?: number;
+  onStopConfirm?: (loc: LatLng, address: string) => void;
   onPickupChange: (loc: LatLng, address: string) => void;
   onDropoffChange: (loc: LatLng, address: string) => void;
   onPickupPlaceSelect?: (id: string | null) => void;
@@ -43,13 +47,15 @@ async function reverseGeocode(loc: LatLng) {
   } catch { return `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`; }
 }
 
-export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dropoffAddress, onPickupChange, onDropoffChange, onPickupPlaceSelect, onDropoffPlaceSelect, children }: Props) {
+export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dropoffAddress, stops = [], stopRequestKey = 0, onStopConfirm, onPickupChange, onDropoffChange, onPickupPlaceSelect, onDropoffPlaceSelect, children }: Props) {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const stageRef = useRef<Stage>(pickup && dropoff ? "done" : pickup ? "dropoff" : "pickup");
   const pickupMarker = useRef<maplibregl.Marker | null>(null);
   const dropoffMarker = useRef<maplibregl.Marker | null>(null);
   const draftMarker = useRef<maplibregl.Marker | null>(null);
-  const [stage, setStage] = useState<Stage>(pickup && dropoff ? "done" : pickup ? "dropoff" : "pickup");
+  const stopMarkers = useRef<maplibregl.Marker[]>([]);
+  const [stage, setStageState] = useState<Stage>(stageRef.current);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [saved, setSaved] = useState<SearchResult[]>([]);
@@ -57,21 +63,32 @@ export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dro
   const [searching, setSearching] = useState(false);
   const [draft, setDraft] = useState<{ loc: LatLng; address: string; placeId: string | null } | null>(null);
   const [locating, setLocating] = useState(!pickup);
-  const activeLabel = stage === "pickup" ? "نقطة الانطلاق" : "نقطة الوصول";
+  const [routeCardSmall, setRouteCardSmall] = useState(false);
+  const [routeCardY, setRouteCardY] = useState(104);
+  const routeDrag = useRef<{ y: number; top: number } | null>(null);
+  const lastStopRequest = useRef(stopRequestKey);
 
-  const makePin = useCallback((kind: "pickup" | "dropoff" | "draft", onClick?: () => void) => {
+  const setStage = (next: Stage) => { stageRef.current = next; setStageState(next); };
+  const activeLabel = stage === "pickup" ? "نقطة الانطلاق" : stage === "dropoff" ? "نقطة الوصول" : "نقطة توقف";
+
+  const makePin = useCallback((kind: "pickup" | "dropoff" | "draft" | "stop", onClick?: () => void) => {
     const el = document.createElement("button");
     el.type = "button";
     el.className = `cmpPin ${kind}`;
-    el.setAttribute("aria-label", kind === "pickup" ? "تعديل نقطة الانطلاق" : kind === "dropoff" ? "تعديل نقطة الوصول" : "الموقع المحدد");
+    el.setAttribute("aria-label", kind === "pickup" ? "تعديل نقطة الانطلاق" : kind === "dropoff" ? "تعديل نقطة الوصول" : kind === "stop" ? "نقطة توقف" : "الموقع المحدد");
     if (onClick) el.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
     return el;
   }, []);
 
-  const openPickup = useCallback(() => { setStage("pickup"); setDraft(pickup ? { loc: pickup, address: pickupAddress, placeId: null } : null); setQuery(pickupAddress); setSearchOpen(true); }, [pickup, pickupAddress]);
-  const openDropoff = useCallback(() => { if (!pickup) return; setStage("dropoff"); setDraft(dropoff ? { loc: dropoff, address: dropoffAddress, placeId: null } : null); setQuery(dropoffAddress); setSearchOpen(true); }, [pickup, dropoff, dropoffAddress]);
+  const openPickup = useCallback(() => {
+    setStage("pickup"); setDraft(pickup ? { loc: pickup, address: pickupAddress, placeId: null } : null); setQuery(pickupAddress); setSearchOpen(true); setRouteCardSmall(false);
+  }, [pickup, pickupAddress]);
+  const openDropoff = useCallback(() => {
+    if (!pickup) return;
+    setStage("dropoff"); setDraft(dropoff ? { loc: dropoff, address: dropoffAddress, placeId: null } : null); setQuery(dropoffAddress); setSearchOpen(true); setRouteCardSmall(false);
+  }, [pickup, dropoff, dropoffAddress]);
 
-  const syncMarker = useCallback((ref: React.MutableRefObject<maplibregl.Marker | null>, loc: LatLng | null, kind: "pickup" | "dropoff", click: () => void) => {
+  const syncMarker = useCallback((ref: { current: maplibregl.Marker | null }, loc: LatLng | null, kind: "pickup" | "dropoff", click: () => void) => {
     const map = mapRef.current;
     if (!map) return;
     if (!loc) { ref.current?.remove(); ref.current = null; return; }
@@ -81,14 +98,14 @@ export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dro
 
   const fitPoints = useCallback(() => {
     const map = mapRef.current;
-    if (!map) return;
-    const pts = [pickup, dropoff].filter(Boolean) as LatLng[];
+    if (!map || searchOpen) return;
+    const pts = [pickup, ...stops.map(s => s.loc).filter(Boolean), dropoff].filter(Boolean) as LatLng[];
     if (pts.length === 1) map.flyTo({ center: [pts[0].lng, pts[0].lat], zoom: 15 });
-    if (pts.length === 2) {
+    if (pts.length >= 2) {
       const b = new maplibregl.LngLatBounds(); pts.forEach(p => b.extend([p.lng, p.lat]));
-      map.fitBounds(b, { padding: { top: 110, right: 55, bottom: 210, left: 55 }, maxZoom: 15, duration: 500 });
+      map.fitBounds(b, { padding: { top: 190, right: 48, bottom: 230, left: 48 }, maxZoom: 15, duration: 450 });
     }
-  }, [pickup, dropoff]);
+  }, [pickup, dropoff, stops, searchOpen]);
 
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
@@ -97,51 +114,61 @@ export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dro
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
     map.on("load", () => { map.resize(); setTimeout(() => map.resize(), 250); });
     map.on("click", async (e) => {
-      if (stage === "done") return;
+      const activeStage = stageRef.current;
+      if (activeStage === "done") return;
       const loc = { lat: e.lngLat.lat, lng: e.lngLat.lng };
       const address = await reverseGeocode(loc);
       setDraft({ loc, address, placeId: null });
       setSearchOpen(false);
     });
     return () => { map.remove(); mapRef.current = null; };
-  }, []); // intentional: map lifetime only
+  }, []);
 
   useEffect(() => { syncMarker(pickupMarker, pickup, "pickup", openPickup); }, [pickup, openPickup, syncMarker]);
   useEffect(() => { syncMarker(dropoffMarker, dropoff, "dropoff", openDropoff); }, [dropoff, openDropoff, syncMarker]);
-  useEffect(() => { if (mapRef.current) fitPoints(); }, [pickup, dropoff, fitPoints]);
+  useEffect(() => { if (mapRef.current) fitPoints(); }, [pickup, dropoff, stops, fitPoints]);
+
+  useEffect(() => {
+    stopMarkers.current.forEach(m => m.remove()); stopMarkers.current = [];
+    const map = mapRef.current; if (!map) return;
+    stops.forEach(s => { if (s.loc) stopMarkers.current.push(new maplibregl.Marker({ element: makePin("stop") }).setLngLat([s.loc.lng, s.loc.lat]).addTo(map)); });
+  }, [stops, makePin]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     if (!draft) { draftMarker.current?.remove(); draftMarker.current = null; return; }
-    if (!draftMarker.current) {
-      draftMarker.current = new maplibregl.Marker({ element: makePin("draft"), draggable: true }).setLngLat([draft.loc.lng, draft.loc.lat]).addTo(map);
-      draftMarker.current.on("dragend", async () => {
-        const p = draftMarker.current!.getLngLat();
-        const loc = { lat: p.lat, lng: p.lng };
-        setDraft({ loc, address: await reverseGeocode(loc), placeId: null });
-      });
-    } else draftMarker.current.setLngLat([draft.loc.lng, draft.loc.lat]);
-    map.flyTo({ center: [draft.loc.lng, draft.loc.lat], zoom: Math.max(map.getZoom(), 15), duration: 400 });
-  }, [draft?.loc.lat, draft?.loc.lng, makePin]);
+    draftMarker.current?.remove();
+    draftMarker.current = new maplibregl.Marker({ element: makePin(stage === "stop" ? "stop" : "draft"), draggable: true }).setLngLat([draft.loc.lng, draft.loc.lat]).addTo(map);
+    draftMarker.current.on("dragend", async () => {
+      const p = draftMarker.current!.getLngLat(); const loc = { lat: p.lat, lng: p.lng };
+      setDraft({ loc, address: await reverseGeocode(loc), placeId: null });
+    });
+    map.flyTo({ center: [draft.loc.lng, draft.loc.lat], zoom: Math.max(map.getZoom(), 15), duration: 350 });
+    return () => { draftMarker.current?.remove(); draftMarker.current = null; };
+  }, [draft?.loc.lat, draft?.loc.lng, stage, makePin]);
 
   useEffect(() => {
     if (pickup) { setLocating(false); return; }
     if (!navigator.geolocation) { setLocating(false); setSearchOpen(true); return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
-      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      const address = await reverseGeocode(loc);
-      onPickupChange(loc, address); onPickupPlaceSelect?.(null);
-      setStage("dropoff"); setLocating(false);
-      mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15 });
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; const address = await reverseGeocode(loc);
+      onPickupChange(loc, address); onPickupPlaceSelect?.(null); setStage("dropoff"); setLocating(false);
+      mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15 }); setTimeout(() => setSearchOpen(true), 250);
     }, () => { setLocating(false); setStage("pickup"); setSearchOpen(true); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
   }, []);
 
   useEffect(() => {
+    if (stopRequestKey === lastStopRequest.current) return;
+    lastStopRequest.current = stopRequestKey;
+    if (!pickup || !dropoff) return;
+    setStage("stop"); setDraft(null); setQuery(""); setSearchOpen(false); setRouteCardSmall(true);
+  }, [stopRequestKey, pickup, dropoff]);
+
+  useEffect(() => {
     const q = query.trim();
     if (!searchOpen || q.length < 1) { setSaved([]); setRemote([]); setSearching(false); return; }
-    let cancelled = false;
-    setSearching(true);
+    let cancelled = false; setSearching(true);
     const t = window.setTimeout(async () => {
       const localReq = supabase.rpc("search_places", { p_query: q });
       const mapReq = fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=eg&limit=7&q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": "ar" } }).then(r => r.ok ? r.json() : []);
@@ -162,62 +189,71 @@ export default function CustomerMapPlanner({ pickup, pickupAddress, dropoff, dro
 
   const choose = (r: SearchResult) => {
     const address = r.context ? `${r.name} — ${r.context}` : r.name;
-    setDraft({ loc: r.loc, address, placeId: r.placeId });
-    setSearchOpen(false); setQuery(r.name);
+    setDraft({ loc: r.loc, address, placeId: r.placeId }); setSearchOpen(false); setQuery(r.name);
   };
 
   const confirmDraft = () => {
     if (!draft) return;
     if (stage === "pickup") {
-      onPickupChange(draft.loc, draft.address); onPickupPlaceSelect?.(draft.placeId);
-      setStage("dropoff"); setDraft(null); setQuery(""); setSearchOpen(true);
-    } else {
-      onDropoffChange(draft.loc, draft.address); onDropoffPlaceSelect?.(draft.placeId);
-      setStage("done"); setDraft(null); setQuery(""); setSearchOpen(false);
+      onPickupChange(draft.loc, draft.address); onPickupPlaceSelect?.(draft.placeId); setStage("dropoff"); setDraft(null); setQuery(""); setSearchOpen(true);
+    } else if (stage === "dropoff") {
+      onDropoffChange(draft.loc, draft.address); onDropoffPlaceSelect?.(draft.placeId); setStage("done"); setDraft(null); setQuery(""); setSearchOpen(false);
+    } else if (stage === "stop") {
+      onStopConfirm?.(draft.loc, draft.address); setStage("done"); setDraft(null); setQuery(""); setSearchOpen(false); setRouteCardSmall(false);
     }
   };
 
   const results = useMemo(() => [...saved, ...remote.filter(r => !saved.some(s => s.name === r.name))], [saved, remote]);
 
+  const startRouteDrag = (e: React.PointerEvent<HTMLDivElement>) => { routeDrag.current = { y: e.clientY, top: routeCardY }; e.currentTarget.setPointerCapture(e.pointerId); };
+  const moveRouteDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!routeDrag.current) return;
+    const next = Math.max(74, Math.min(window.innerHeight * 0.55, routeDrag.current.top + (e.clientY - routeDrag.current.y)));
+    setRouteCardY(next);
+  };
+  const endRouteDrag = () => { routeDrag.current = null; };
+
   return (
     <div className="cmpShell" dir="rtl">
       <div ref={mapEl} className="cmpMap" />
-      <div className="cmpTopCard">
-        <button type="button" className="cmpPoint pickup" onClick={openPickup}>
-          <span className="cmpDot green"/><span><small>من</small><b>{pickupAddress || (locating ? "جارٍ تحديد موقعك..." : "حدد نقطة الانطلاق")}</b></span>
-        </button>
-        <button type="button" className="cmpPoint dropoff" onClick={openDropoff} disabled={!pickup}>
-          <span className="cmpDot red"/><span><small>إلى</small><b>{dropoffAddress || "إلى أين؟"}</b></span>
-        </button>
+
+      <div className={`cmpTopCard ${routeCardSmall ? "small" : ""}`} style={{ top: routeCardY }}>
+        <div className="cmpFloatHandle" onPointerDown={startRouteDrag} onPointerMove={moveRouteDrag} onPointerUp={endRouteDrag} onPointerCancel={endRouteDrag}>
+          <span/>
+          <button type="button" onClick={() => setRouteCardSmall(v => !v)} aria-label={routeCardSmall ? "تكبير لوحة النقاط" : "تصغير لوحة النقاط"}>{routeCardSmall ? "□" : "—"}</button>
+        </div>
+        {!routeCardSmall && <>
+          <div className="cmpPointRow pickup">
+            <button type="button" className="cmpReselect" onClick={openPickup} aria-label="إعادة اختيار نقطة الانطلاق">↻</button>
+            <button type="button" className="cmpPoint" onClick={openPickup}><span className="cmpDot green"/><span className="cmpAddressText"><small>من</small><b title={pickupAddress}>{pickupAddress || (locating ? "جارٍ تحديد موقعك..." : "حدد نقطة الانطلاق")}</b></span></button>
+          </div>
+          <div className="cmpPointRow dropoff">
+            <button type="button" className="cmpReselect" onClick={openDropoff} disabled={!pickup} aria-label="إعادة اختيار نقطة الوصول">↻</button>
+            <button type="button" className="cmpPoint" onClick={openDropoff} disabled={!pickup}><span className="cmpDot red"/><span className="cmpAddressText"><small>إلى</small><b title={dropoffAddress}>{dropoffAddress || "إلى أين؟"}</b></span></button>
+          </div>
+        </>}
+        {routeCardSmall && <button type="button" className="cmpMiniRoute" onClick={() => setRouteCardSmall(false)}><span className="cmpDot green"/><b>من</b><span>←</span><span className="cmpDot red"/><b>إلى</b></button>}
       </div>
 
-      {stage === "dropoff" && !dropoff && !searchOpen && !draft && (
-        <button type="button" className="cmpDestinationPrompt" onClick={openDropoff}>🔎 إلى أين تريد الذهاب؟</button>
-      )}
+      {stage === "dropoff" && !dropoff && !searchOpen && !draft && <button type="button" className="cmpDestinationPrompt" onClick={openDropoff}>🔎 إلى أين تريد الذهاب؟</button>}
+      {stage === "stop" && !searchOpen && !draft && <div className="cmpStopPrompt"><b>حدد نقطة التوقف</b><span>اضغط على الخريطة أو ابحث عن المكان</span><button type="button" onClick={() => setSearchOpen(true)}>بحث</button></div>}
 
-      {draft && !searchOpen && (
-        <div className="cmpConfirmCard">
-          <div><small>{activeLabel}</small><b>{draft.address}</b><span>يمكنك سحب الدبوس لضبط المكان بدقة</span></div>
-          <button type="button" onClick={confirmDraft}>تأكيد</button>
-        </div>
-      )}
+      {draft && !searchOpen && <div className={`cmpConfirmCard ${stage === "stop" ? "stop" : ""}`}>
+        <div><small>{activeLabel}</small><b>{draft.address}</b><span>يمكنك سحب الدبوس لضبط المكان بدقة</span></div><button type="button" onClick={confirmDraft}>تأكيد</button>
+      </div>}
 
       {stage === "done" && children && <div className="cmpTripSheet">{children}</div>}
 
-      {searchOpen && (
-        <section className="cmpSearchSheet" aria-label={`بحث ${activeLabel}`}>
-          <div className="cmpGrab" />
-          <header><button type="button" onClick={() => setSearchOpen(false)}>×</button><div><small>{activeLabel}</small><h2>{stage === "pickup" ? "اختر نقطة الانطلاق" : "أدخل وجهتك"}</h2></div></header>
-          <div className="cmpSearchBox">⌕<input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder={stage === "pickup" ? "ابحث عن مكان الانطلاق..." : "ابحث عن مكان الوصول..."}/>{query && <button type="button" onClick={() => setQuery("")}>×</button>}</div>
-          <div className="cmpResults">
-            {searching && <p className="cmpStatus">جارٍ البحث في الأماكن المحفوظة والخريطة...</p>}
-            {!searching && query.trim() && results.length === 0 && <p className="cmpStatus">لا توجد نتائج مطابقة — يمكنك اختيار النقطة مباشرة من الخريطة.</p>}
-            {results.map(r => <button type="button" key={r.key} className="cmpResult" onClick={() => choose(r)}>
-              <span className={`cmpResultIcon ${r.source}`}>⌖</span><span><b><Highlight text={r.name} query={query}/></b>{r.context && <small><Highlight text={r.context} query={query}/></small>}<em>{r.source === "saved" ? "مكان محفوظ في كابتن بنها" : "نتيجة من الخريطة"}</em></span>
-            </button>)}
-          </div>
-        </section>
-      )}
+      {searchOpen && <section className="cmpSearchSheet" aria-label={`بحث ${activeLabel}`}>
+        <div className="cmpGrab" />
+        <header><button type="button" onClick={() => setSearchOpen(false)}>×</button><div><small>{activeLabel}</small><h2>{stage === "pickup" ? "اختر نقطة الانطلاق" : stage === "dropoff" ? "أدخل وجهتك" : "أضف نقطة توقف"}</h2></div></header>
+        <div className="cmpSearchBox">⌕<input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder={stage === "pickup" ? "ابحث عن مكان الانطلاق..." : stage === "dropoff" ? "ابحث عن مكان الوصول..." : "ابحث عن نقطة التوقف..."}/>{query && <button type="button" onClick={() => setQuery("")}>×</button>}</div>
+        <div className="cmpResults">
+          {searching && <p className="cmpStatus">جارٍ البحث في الأماكن المحفوظة والخريطة...</p>}
+          {!searching && query.trim() && results.length === 0 && <p className="cmpStatus">لا توجد نتائج مطابقة — يمكنك اختيار النقطة مباشرة من الخريطة.</p>}
+          {results.map(r => <button type="button" key={r.key} className="cmpResult" onClick={() => choose(r)}><span className={`cmpResultIcon ${r.source}`}>⌖</span><span><b><Highlight text={r.name} query={query}/></b>{r.context && <small><Highlight text={r.context} query={query}/></small>}<em>{r.source === "saved" ? "مكان محفوظ في كابتن بنها" : "نتيجة من الخريطة"}</em></span></button>)}
+        </div>
+      </section>}
     </div>
   );
 }
