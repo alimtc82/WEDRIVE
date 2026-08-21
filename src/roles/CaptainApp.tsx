@@ -29,6 +29,7 @@ export default function CaptainApp() {
   const [tab, setTab] = useState<"home" | "trips" | "ratings">("home");
   const [online, setOnline] = useState(false);
   const [trips, setTrips] = useState<PendingTrip[]>([]);
+  const [pendingError, setPendingError] = useState("");
   const [note, setNote] = useState("");
   const [capStatus, setCapStatus] = useState<string | null>(null);
   const [hasActive, setHasActive] = useState<boolean>(false);
@@ -45,14 +46,16 @@ export default function CaptainApp() {
   }, []);
 
   useEffect(() => {
-    checkOffer();
+    void checkOffer();
     const ch = supabase.channel("cap-offer-check")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "trip_offers", filter: `captain_id=eq.${profile!.id}`,
-      }, () => checkOffer())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [checkOffer, profile]);
+        event: "*", schema: "public", table: "trip_offers",
+      }, () => { void checkOffer(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void checkOffer();
+      });
+    return () => { void supabase.removeChannel(ch); };
+  }, [checkOffer]);
 
   useEffect(() => {
     supabase.from("settings").select("tracking_interval_sec").single()
@@ -64,18 +67,30 @@ export default function CaptainApp() {
     setHasActive(!!data);
   }, []);
 
+  const loadPending = useCallback(async () => {
+    const { data, error } = await supabase.rpc("pending_trips_for_captain");
+    if (error) {
+      setPendingError("تعذّر تحديث الطلبات: " + error.message);
+      return;
+    }
+    setTrips((data as PendingTrip[]) || []);
+    setPendingError("");
+  }, []);
+
   // تتبّع الموقع طالما الكابتن متصل أو في رحلة
   const locStatus = useLocationTracker(online || hasActive, trackInterval);
 
   useEffect(() => {
-    checkActive();
+    void checkActive();
     const ch = supabase.channel("cap-active")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "trips", filter: `captain_id=eq.${profile!.id}`,
-      }, () => checkActive())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [checkActive, profile]);
+        event: "*", schema: "public", table: "trips",
+      }, () => { void checkActive(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void checkActive();
+      });
+    return () => { void supabase.removeChannel(ch); };
+  }, [checkActive]);
 
   useEffect(() => {
     supabase.from("captains").select("status,reject_reason,is_online").eq("id", profile!.id).single()
@@ -105,11 +120,6 @@ export default function CaptainApp() {
     };
   }, [online, hasActive]);
 
-  const loadPending = useCallback(async () => {
-    const { data, error } = await supabase.rpc("pending_trips_for_captain");
-    if (!error && data) setTrips(data as PendingTrip[]);
-  }, []);
-
   const toggleOnline = async (val: boolean) => {
     const previous = online;
     setOnline(val);
@@ -119,34 +129,75 @@ export default function CaptainApp() {
       setNote("تعذّر تحديث حالة الاتصال: " + error.message);
       return;
     }
-    if (val) loadPending();
-    else setTrips([]);
+    if (val) void loadPending();
+    else {
+      setTrips([]);
+      setPendingError("");
+    }
   };
 
   useEffect(() => {
     if (!online) return;
-    loadPending();
+
+    void loadPending();
+
+    // Realtime gives immediate updates when available. We intentionally do not
+    // use a column filter here because mobile Realtime connections can be stale
+    // after schema/publication changes; the RPC is the authoritative filter.
     const channel = supabase
       .channel("pending-trips")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "trips", filter: "status=eq.pending",
-      }, () => loadPending())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [online, loadPending]);
+        event: "*", schema: "public", table: "trips",
+      }, () => { void loadPending(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadPending();
+      });
+
+    // Fallback polling guarantees delivery even if a websocket event is lost,
+    // the WebView was suspended, or the device briefly changed networks.
+    const pollTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        void loadPending();
+      }
+    }, 8_000);
+
+    const refreshAll = () => {
+      if (document.visibilityState !== "visible" || !navigator.onLine) return;
+      void loadPending();
+      void checkActive();
+      void checkOffer();
+      void supabase.rpc("captain_presence_heartbeat", { p_online: true });
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshAll();
+    };
+
+    window.addEventListener("focus", refreshAll);
+    window.addEventListener("online", refreshAll);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(pollTimer);
+      window.removeEventListener("focus", refreshAll);
+      window.removeEventListener("online", refreshAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+      void supabase.removeChannel(channel);
+    };
+  }, [online, loadPending, checkActive, checkOffer]);
 
   const submitOffer = async (tripId: string, price: number) => {
     setNote("");
     const { error } = await supabase.rpc("submit_offer", { p_trip_id: tripId, p_price: price });
     if (error) {
       setNote(error.message || "تعذّر تقديم العرض");
-      loadPending();
+      void loadPending();
       return;
     }
     setNote("تم تقديم عرضك ✓ في انتظار رد العميل");
-    checkOffer();
-    checkActive();
-    loadPending();
+    void checkOffer();
+    void checkActive();
+    void loadPending();
   };
 
   // شاشة انتظار الموافقة أو الرفض
@@ -186,7 +237,7 @@ export default function CaptainApp() {
       <div className="roleShell" dir="rtl">
         <TopBar title="كابتن بنها — الكابتن" />
         <main className="roleMain">
-          <ActiveTrip onDone={() => { setHasActive(false); checkActive(); loadPending(); }} />
+          <ActiveTrip onDone={() => { setHasActive(false); void checkActive(); void loadPending(); }} />
         </main>
       </div>
     );
@@ -225,7 +276,7 @@ export default function CaptainApp() {
               </div>
             </section>
 
-            {hasOffer && <CaptainOffer onCleared={() => { setHasOffer(false); loadPending(); }} />}
+            {hasOffer && <CaptainOffer onCleared={() => { setHasOffer(false); void loadPending(); }} />}
 
             {!hasOffer && (
               <section className="panel">
@@ -235,7 +286,8 @@ export default function CaptainApp() {
                 </div>
 
                 {note && <p className="okMsg">{note}</p>}
-                {online && trips.length === 0 && <p className="emptyState">لا توجد طلبات حاليًا — سنُعلمك فور وصول طلب</p>}
+                {pendingError && <p className="authError" role="alert">{pendingError}</p>}
+                {online && !pendingError && trips.length === 0 && <p className="emptyState">لا توجد طلبات حاليًا — سنُعلمك فور وصول طلب</p>}
 
                 <div className="reqList">
                   {trips.map((t) => (
@@ -309,7 +361,7 @@ export default function CaptainApp() {
                       autoFocus
                       value={priceModal.value}
                       onChange={(e) => setPriceModal((m) => ({ ...m, value: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === "Enter") { const p = parseFloat(priceModal.value); if (p > 0) { submitOffer(priceModal.tripId, p); setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" }); } } }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { const p = parseFloat(priceModal.value); if (p > 0) { void submitOffer(priceModal.tripId, p); setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" }); } } }}
                       placeholder="مثال: 45"
                     />
                   </div>
@@ -320,7 +372,7 @@ export default function CaptainApp() {
                       disabled={!parseFloat(priceModal.value) || parseFloat(priceModal.value) <= 0}
                       onClick={() => {
                         const p = parseFloat(priceModal.value);
-                        submitOffer(priceModal.tripId, p);
+                        void submitOffer(priceModal.tripId, p);
                         setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" });
                       }}
                     >
