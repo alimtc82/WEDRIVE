@@ -22,20 +22,36 @@ export default function CaptainOffer({ onCleared }: { onCleared: () => void }) {
   }, [onCleared]);
 
   useEffect(() => {
-    load();
+    void load();
     const ch = supabase.channel("cap-offer")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip_offers" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .on("postgres_changes", { event: "*", schema: "public", table: "trip_offers" }, () => { void load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => { void load(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void load();
+      });
+
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void load();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    const poll = window.setInterval(refresh, 8_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      void supabase.removeChannel(ch);
+      window.clearInterval(poll);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
-  // عدّاد الوقت المتبقّي — يتزامن مع offer_ttl_sec في الإعدادات
   useEffect(() => {
     if (!offer) return;
     const exp = new Date(offer.expires_at).getTime();
 
-    // لو عرض جديد: احسب total من الفرق الفعلي بين expires_at والوقت الحالي
     if (prevOfferIdRef.current !== offer.offer_id) {
       prevOfferIdRef.current = offer.offer_id;
       const ttl = Math.max(1, Math.round((exp - Date.now()) / 1000));
@@ -46,7 +62,7 @@ export default function CaptainOffer({ onCleared }: { onCleared: () => void }) {
     timerRef.current = setInterval(() => {
       const left = Math.max(0, Math.round((exp - Date.now()) / 1000));
       setRemain(left);
-      if (left <= 0) { load(); }
+      if (left <= 0) void load();
     }, 500);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [offer, load]);
@@ -63,7 +79,6 @@ export default function CaptainOffer({ onCleared }: { onCleared: () => void }) {
       </div>
       <p className="offerWaitSub">في انتظار رد العميل على عرضك...</p>
 
-      {/* شريط التقدّم (Splash) */}
       <div className="splashBar"><div className="splashFill" style={{ width: `${pct}%` }} /></div>
       <p className="splashTime">{remain} ثانية متبقية</p>
 
