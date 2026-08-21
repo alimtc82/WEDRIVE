@@ -20,21 +20,41 @@ export default function CustomerOffers({ tripId, onAccepted, onCancel }: {
   }, [tripId]);
 
   useEffect(() => {
-    load();
+    void load();
     const ch = supabase.channel("cust-offers")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "trip_offers", filter: `trip_id=eq.${tripId}`,
-      }, () => load())
-      .subscribe();
-    const iv = setInterval(load, 15000);
-    return () => { supabase.removeChannel(ch); clearInterval(iv); };
+        event: "*", schema: "public", table: "trip_offers",
+      }, () => { void load(); })
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "trips",
+      }, () => { void load(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void load();
+      });
+
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void load();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    const iv = window.setInterval(refresh, 8_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      void supabase.removeChannel(ch);
+      window.clearInterval(iv);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
   const accept = async (offerId: string) => {
     setBusy(true); setMsg("");
     const { error } = await supabase.rpc("accept_offer", { p_offer_id: offerId });
     setBusy(false);
-    if (error) { setMsg(error.message || "تعذّر قبول العرض"); load(); return; }
+    if (error) { setMsg(error.message || "تعذّر قبول العرض"); void load(); return; }
     onAccepted();
   };
 
