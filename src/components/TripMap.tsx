@@ -4,9 +4,13 @@ import type { GeoJSON } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import { carMarkerSvg } from "../lib/carMarker";
-import { fetchRoute, type Coord } from "../lib/routing";
+import { fetchRoute, fetchRouteDetails, type Coord } from "../lib/routing";
 
-interface Props { tripId: string; status: string; }
+interface Props {
+  tripId: string;
+  status: string;
+  onEtaChange?: (minutes: number | null) => void;
+}
 interface Stop { lat: number; lng: number; address?: string; }
 interface MapData {
   status: string;
@@ -50,7 +54,7 @@ function nearestIndex(route: Coord[], pos: Coord): number {
   return best;
 }
 
-export default function TripMap({ tripId, status }: Props) {
+export default function TripMap({ tripId, status, onEtaChange }: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markers = useRef<{ captain?: maplibregl.Marker; from?: maplibregl.Marker; to?: maplibregl.Marker; stops: maplibregl.Marker[] }>({ stops: [] });
@@ -116,12 +120,13 @@ export default function TripMap({ tripId, status }: Props) {
 
     let waypoints: Coord[];
     if (beforeStart) {
-      if (!cap) return;
+      if (!cap) { onEtaChange?.(null); return; }
       if (!anchors.current.pickup) anchors.current.pickup = cap;
       waypoints = [anchors.current.pickup, from];
     } else {
       const stopCoords: Coord[] = stopsRef.current.map((s) => [s.lng, s.lat]);
       waypoints = [from, ...stopCoords, to];
+      onEtaChange?.(null);
     }
 
     try {
@@ -133,12 +138,26 @@ export default function TripMap({ tripId, status }: Props) {
       setRouteError(false);
       paintProgress(route, cap);
       focusRoute(route, cap);
+
+      // ETA to pickup is recalculated from the captain's CURRENT location so it
+      // naturally decreases as the captain moves, while the displayed route can
+      // retain its full progress geometry from the original accepted position.
+      if (beforeStart && cap) {
+        try {
+          const current = await fetchRouteDetails([cap, from]);
+          const minutes = current.durationSec == null ? null : Math.max(1, Math.ceil(current.durationSec / 60));
+          onEtaChange?.(minutes);
+        } catch {
+          onEtaChange?.(null);
+        }
+      }
     } catch {
       setRouteError(true);
+      onEtaChange?.(null);
       setLine("routeDone", [], DONE_COLOR, 6);
       setLine("routeNext", [], beforeStart ? NEXT_PICKUP : NEXT_TRIP, 5);
     }
-  }, [beforeStart, phase, paintProgress, focusRoute, setLine]);
+  }, [beforeStart, phase, paintProgress, focusRoute, setLine, onEtaChange]);
 
   const update = useCallback((d: MapData) => {
     const map = mapRef.current; if (!map) return;

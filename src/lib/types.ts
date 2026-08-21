@@ -31,4 +31,5 @@ export interface Settings {
   dispatch_timeout_sec: number;
   tracking_interval_sec: number;
   offer_ttl_sec: number;
+  arrival_radius_m: number;
 }

@@ -20,7 +20,7 @@ export default function AdminApp() {
     if (data) setSettings(data as Settings);
   };
 
-  useEffect(() => { loadSettings(); }, []);
+  useEffect(() => { void loadSettings(); }, []);
 
   const saveSettings = async () => {
     if (!settings) return;
@@ -34,6 +34,7 @@ export default function AdminApp() {
       p_dispatch_timeout: settings.dispatch_timeout_sec,
       p_tracking_interval: settings.tracking_interval_sec,
       p_offer_ttl: settings.offer_ttl_sec,
+      p_arrival_radius_m: settings.arrival_radius_m,
     });
     setBusy(false);
     setSaveMsg(error ? "تعذّر الحفظ: " + error.message : "تم حفظ الإعدادات ✓");
@@ -61,14 +62,13 @@ export default function AdminApp() {
         {tab === "ratings" && <AdminRatings />}
         {tab === "places" && <AdminPlaces />}
         {tab === "online" && <AdminOnlineCaptains onBack={() => setTab("overview")} />}
-
         {tab === "captains" && <AdminCaptains />}
 
         {tab === "pricing" && settings && (
           <section className="panel">
             <div className="panelHead">
-              <h2>معادلة التسعير</h2>
-              <p>القيم هنا تُطبّق فورًا على حساب سعر أي رحلة جديدة</p>
+              <h2>معادلة التسعير والنطاق</h2>
+              <p>القيم هنا تُطبّق فورًا على الرحلات الجديدة وتشغيل الكابتن</p>
             </div>
             <div className="settingsGrid">
               <label>سعر الكيلو داخل المدينة (ج.م)
@@ -85,6 +85,10 @@ export default function AdminApp() {
               </label>
               <label>نطاق توزيع الطلب (كم)
                 <input type="number" step="0.5" value={settings.dispatch_radius_km} onChange={(e) => upd("dispatch_radius_km", e.target.value)} />
+              </label>
+              <label>نطاق تفعيل «وصلت لنقطة العميل» (متر)
+                <input type="number" step="50" min="50" max="5000" value={settings.arrival_radius_m ?? 300}
+                  onChange={(e) => upd("arrival_radius_m", e.target.value)} />
               </label>
               <label>مهلة قبول الطلب (ثانية)
                 <input type="number" step="1" value={settings.dispatch_timeout_sec} onChange={(e) => upd("dispatch_timeout_sec", e.target.value)} />
@@ -133,4 +137,3 @@ export default function AdminApp() {
     </div>
   );
 }
-

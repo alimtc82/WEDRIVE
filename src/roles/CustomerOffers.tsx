@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { fetchRouteDetails, type Coord } from "../lib/routing";
 
 interface Offer {
   offer_id: string; captain_id: string; price: number; expires_at: string;
@@ -7,16 +8,43 @@ interface Offer {
   vehicle_type: string | null; vehicle_plate: string | null;
 }
 
+interface EtaPoint {
+  offer_id: string;
+  captain_lng: number;
+  captain_lat: number;
+  pickup_lng: number;
+  pickup_lat: number;
+}
+
 export default function CustomerOffers({ tripId, onAccepted, onCancel }: {
   tripId: string; onAccepted: () => void; onCancel: () => void;
 }) {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [etaByOffer, setEtaByOffer] = useState<Record<string, number | null>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
-    const { data } = await supabase.rpc("offers_for_my_trip", { p_trip_id: tripId });
-    setOffers((data as Offer[]) || []);
+    const [offersRes, etaRes] = await Promise.all([
+      supabase.rpc("offers_for_my_trip", { p_trip_id: tripId }),
+      supabase.rpc("offer_eta_points", { p_trip_id: tripId }),
+    ]);
+    const rows = (offersRes.data as Offer[]) || [];
+    setOffers(rows);
+
+    const points = (etaRes.data as EtaPoint[]) || [];
+    const etaPairs = await Promise.all(points.map(async (p) => {
+      const captain: Coord = [Number(p.captain_lng), Number(p.captain_lat)];
+      const pickup: Coord = [Number(p.pickup_lng), Number(p.pickup_lat)];
+      try {
+        const route = await fetchRouteDetails([captain, pickup]);
+        const minutes = route.durationSec == null ? null : Math.max(1, Math.ceil(route.durationSec / 60));
+        return [p.offer_id, minutes] as const;
+      } catch {
+        return [p.offer_id, null] as const;
+      }
+    }));
+    setEtaByOffer(Object.fromEntries(etaPairs));
   }, [tripId]);
 
   useEffect(() => {
@@ -27,6 +55,9 @@ export default function CustomerOffers({ tripId, onAccepted, onCancel }: {
       }, () => { void load(); })
       .on("postgres_changes", {
         event: "*", schema: "public", table: "trips",
+      }, () => { void load(); })
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "captains",
       }, () => { void load(); })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void load();
@@ -88,6 +119,9 @@ export default function CustomerOffers({ tripId, onAccepted, onCancel }: {
               <div>
                 <b>{o.captain_name}</b>
                 <span className="offerCapMeta">★ {Number(o.captain_rating).toFixed(1)} · {o.captain_trips} رحلة</span>
+                {etaByOffer[o.offer_id] != null && (
+                  <span className="offerCapVeh">يبعد عنك حوالي {etaByOffer[o.offer_id]} دقيقة</span>
+                )}
                 {o.vehicle_type && <span className="offerCapVeh">{o.vehicle_type} · {o.vehicle_plate}</span>}
               </div>
             </div>

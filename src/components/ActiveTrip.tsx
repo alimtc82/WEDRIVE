@@ -4,6 +4,12 @@ import StarRating from "./StarRating";
 import TripMap from "./TripMap";
 
 interface TripStop { lat: number; lng: number; address?: string; }
+interface ArrivalStatus {
+  can_arrive: boolean;
+  distance_m: number | null;
+  radius_m: number;
+  reason: string | null;
+}
 
 interface ActiveTrip {
   id: string; status: string; kind: string;
@@ -29,11 +35,18 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [err, setErr] = useState("");
+  const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [arrival, setArrival] = useState<ArrivalStatus | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("my_active_trip");
     setTrip(data as ActiveTrip | null);
     setLoading(false);
+  }, []);
+
+  const loadArrival = useCallback(async (tripId: string) => {
+    const { data, error } = await supabase.rpc("captain_arrival_status", { p_trip_id: tripId });
+    if (!error && data) setArrival(data as ArrivalStatus);
   }, []);
 
   useEffect(() => {
@@ -71,12 +84,31 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
     };
   }, [load]);
 
+  // For captains, continuously validate the actual distance to the customer's
+  // pickup. The UI gate is helpful, while the database function is authoritative.
+  useEffect(() => {
+    if (!trip || trip.is_customer || trip.status !== "accepted") {
+      setArrival(null);
+      return;
+    }
+    const refresh = () => { if (navigator.onLine) void loadArrival(trip.id); };
+    refresh();
+    const timer = window.setInterval(refresh, 5_000);
+    const ch = supabase.channel("arrival-distance-" + trip.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, refresh)
+      .subscribe((state) => { if (state === "SUBSCRIBED") refresh(); });
+    return () => {
+      window.clearInterval(timer);
+      void supabase.removeChannel(ch);
+    };
+  }, [trip, loadArrival]);
+
   const act = async (fn: string) => {
     if (!trip) return;
     setBusy(true); setErr("");
     const { error } = await supabase.rpc(fn, { p_trip_id: trip.id });
     setBusy(false);
-    if (error) { setErr(error.message); return; }
+    if (error) { setErr(error.message); if (fn === "captain_arrived") void loadArrival(trip.id); return; }
     void load();
   };
 
@@ -118,8 +150,14 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
+      {trip.is_customer && trip.status === "accepted" && (
+        <div className="okMsg" style={{ marginBottom: 10, textAlign: "center", fontWeight: 700 }}>
+          {etaMinutes != null ? `الكابتن يبعد عنك حوالي ${etaMinutes} دقيقة` : "جارٍ حساب وقت وصول الكابتن..."}
+        </div>
+      )}
+
       {trip.status !== "completed" && (
-        <TripMap tripId={trip.id} status={trip.status} />
+        <TripMap tripId={trip.id} status={trip.status} onEtaChange={setEtaMinutes} />
       )}
 
       {other && (
@@ -171,7 +209,21 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
       ) : (
         <div className="tripActions">
           {trip.status === "accepted" && (
-            <button className="cta" onClick={() => act("captain_arrived")} disabled={busy}>وصلت لنقطة العميل</button>
+            <>
+              {arrival && (
+                <p className={arrival.can_arrive ? "okMsg" : "locWarn"} style={{ marginBottom: 8 }}>
+                  {arrival.distance_m == null
+                    ? "حدّث موقعك لتفعيل زر الوصول"
+                    : arrival.can_arrive
+                      ? `أنت داخل نطاق الوصول (${Math.round(arrival.distance_m)} م)`
+                      : `تبعد ${Math.round(arrival.distance_m)} م عن العميل — زر الوصول يعمل داخل ${arrival.radius_m} م`}
+                </p>
+              )}
+              <button className="cta" onClick={() => act("captain_arrived")}
+                disabled={busy || !arrival?.can_arrive}>
+                وصلت لنقطة العميل
+              </button>
+            </>
           )}
           {trip.status === "arrived" && (
             <button className="cta" onClick={() => act("captain_start_trip")} disabled={busy}>بدء الرحلة</button>
