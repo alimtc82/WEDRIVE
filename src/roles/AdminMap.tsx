@@ -14,6 +14,27 @@ interface CaptainPin {
   location_updated_at: string;
 }
 
+type SimTrip = {
+  id: string;
+  seq: number;
+  captain_name: string;
+  status: "waiting" | "in_progress" | "completed" | "stopped";
+  pickup: { lat: number; lng: number };
+  dropoff: { lat: number; lng: number };
+  captain: { lat: number; lng: number };
+  progress: number;
+};
+
+type SimSnapshot = {
+  exists: boolean;
+  status?: "active" | "completed" | "stopped";
+  trips?: SimTrip[];
+};
+
+type SelectedRoute =
+  | { kind: "real"; id: string; name: string }
+  | { kind: "sim"; id: string; name: string };
+
 const CAIRO = { lat: 30.0444, lng: 31.2357 };
 const STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -21,8 +42,10 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-const DONE_COLOR = "#9aa3c0";   // الجزء المقطوع
-const NEXT_COLOR = "#3b82f6";   // الجزء المتبقي
+const DONE_COLOR = "#9aa3c0";
+const NEXT_COLOR = "#3b82f6";
+const SIM_IDLE_COLOR = "#93a1c0";
+const SIM_TRIP_COLOR = "#3b82f6";
 
 function lineFeature(coords: Coord[]) {
   return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
@@ -38,15 +61,34 @@ function nearestIndex(route: Coord[], pos: Coord): number {
   return best;
 }
 
+function routePointAt(route: Coord[], progress: number): { point: Coord; index: number } {
+  if (route.length === 0) return { point: [31.18, 30.46], index: 0 };
+  if (route.length === 1) return { point: route[0], index: 0 };
+  const p = Math.max(0, Math.min(1, Number(progress) || 0));
+  const scaled = p * (route.length - 1);
+  const i = Math.min(route.length - 2, Math.floor(scaled));
+  const f = scaled - i;
+  const a = route[i], b = route[i + 1];
+  return {
+    point: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f],
+    index: i,
+  };
+}
+
 export default function AdminMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+  const simMarkersRef = useRef<Record<string, maplibregl.Marker>>({});
   const meMarkerRef = useRef<maplibregl.Marker | null>(null);
   const routeCache = useRef<Record<string, Coord[]>>({});
+  const simRouteCache = useRef<Record<string, Coord[]>>({});
+  const simTripsRef = useRef<Record<string, SimTrip>>({});
   const anchors = useRef<Record<string, Coord>>({});
-  const selectedRef = useRef<{ id: string; name: string } | null>(null);
+  const selectedRef = useRef<SelectedRoute | null>(null);
   const [count, setCount] = useState(0);
+  const [simCount, setSimCount] = useState(0);
+  const [simActive, setSimActive] = useState(0);
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
   const setLine = useCallback((id: string, coords: Coord[], color: string, width: number) => {
@@ -69,7 +111,6 @@ export default function AdminMap() {
     setLine("adminRouteNext", [], NEXT_COLOR, 5);
   }, [setLine]);
 
-  // رسم مسار رحلة كابتن معيّن (مقطوع + متبقٍ) — يُستدعى عند الضغط عليه ويُحدَّث دوريًا
   const showRoute = useCallback(async (captainId: string, name: string, silent = false) => {
     const map = mapRef.current; if (!map) return;
     const { data } = await supabase.rpc("admin_captain_route", { p_captain_id: captainId });
@@ -78,13 +119,12 @@ export default function AdminMap() {
       return;
     }
 
-    if (!silent) { setSelectedName(name); selectedRef.current = { id: captainId, name }; }
+    if (!silent) { setSelectedName(name); selectedRef.current = { kind: "real", id: captainId, name }; }
 
     const beforeStart = data.status === "accepted" || data.status === "arrived";
     const from: Coord = [data.pickup.lng, data.pickup.lat];
     const to: Coord = [data.dropoff.lng, data.dropoff.lat];
     const cap: Coord | null = data.captain ? [data.captain.lng, data.captain.lat] : null;
-
     const phase = beforeStart ? "pickup" : "trip";
     const cacheKey = `${captainId}:${phase}`;
 
@@ -103,7 +143,6 @@ export default function AdminMap() {
       routeCache.current[cacheKey] = route;
     }
 
-    // تقسيم المسار حسب موقع الكابتن الحالي
     if (cap && route.length >= 2) {
       const i = nearestIndex(route, cap);
       setLine("adminRouteDone", [...route.slice(0, i + 1), cap], DONE_COLOR, 6);
@@ -112,6 +151,51 @@ export default function AdminMap() {
       setLine("adminRouteDone", [], DONE_COLOR, 6);
       setLine("adminRouteNext", route, NEXT_COLOR, 5);
     }
+
+    if (!silent && route.length >= 2) {
+      const bounds = new maplibregl.LngLatBounds();
+      route.forEach((c) => bounds.extend(c as [number, number]));
+      map.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 500 });
+    }
+  }, [clearRoute, setLine]);
+
+  const showSimRoute = useCallback(async (simId: string, silent = false) => {
+    const map = mapRef.current;
+    const trip = simTripsRef.current[simId];
+    if (!map || !trip) return;
+
+    if (trip.status !== "in_progress") {
+      if (!silent) {
+        setSelectedName(`${trip.captain_name} — متوقف`);
+        selectedRef.current = null;
+        clearRoute();
+      }
+      return;
+    }
+
+    if (!silent) {
+      setSelectedName(trip.captain_name);
+      selectedRef.current = { kind: "sim", id: simId, name: trip.captain_name };
+    }
+
+    let route = simRouteCache.current[simId];
+    if (!route) {
+      try {
+        route = await fetchRoute([
+          [Number(trip.pickup.lng), Number(trip.pickup.lat)],
+          [Number(trip.dropoff.lng), Number(trip.dropoff.lat)],
+        ]);
+        simRouteCache.current[simId] = route;
+      } catch {
+        if (!silent) setSelectedName(`${trip.captain_name} — تعذّر تحميل المسار`);
+        return;
+      }
+    }
+    if (route.length < 2) return;
+
+    const { point, index } = routePointAt(route, trip.progress);
+    setLine("adminRouteDone", [...route.slice(0, index + 1), point], DONE_COLOR, 6);
+    setLine("adminRouteNext", [point, ...route.slice(index + 1)], NEXT_COLOR, 5);
 
     if (!silent) {
       const bounds = new maplibregl.LngLatBounds();
@@ -140,12 +224,12 @@ export default function AdminMap() {
         label.textContent = c.full_name || "";
         el.append(img, label);
         el.style.cursor = "pointer";
-        el.addEventListener("click", (ev) => { ev.stopPropagation(); showRoute(c.id, c.full_name); });
+        el.addEventListener("click", (ev) => { ev.stopPropagation(); void showRoute(c.id, c.full_name); });
         m = new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat]).addTo(map);
         markersRef.current[c.id] = m;
       } else {
         m.setLngLat([c.lng, c.lat]);
-        const img = (m.getElement().querySelector("img") as HTMLImageElement);
+        const img = m.getElement().querySelector("img") as HTMLImageElement;
         if (img) { img.src = carMarkerSvg(color); img.style.cssText = rot; }
       }
     }
@@ -155,12 +239,96 @@ export default function AdminMap() {
     setCount(caps.length);
   }, [showRoute]);
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.rpc("admin_captains_on_map");
-    if (data) render(data as CaptainPin[]);
-  }, [render]);
+  const clearSimulationMarkers = useCallback(() => {
+    for (const id of Object.keys(simMarkersRef.current)) simMarkersRef.current[id].remove();
+    simMarkersRef.current = {};
+    simTripsRef.current = {};
+    simRouteCache.current = {};
+    setSimCount(0);
+    setSimActive(0);
+    if (selectedRef.current?.kind === "sim") {
+      selectedRef.current = null;
+      setSelectedName(null);
+      clearRoute();
+    }
+  }, [clearRoute]);
 
-  // نقطة موقع الأدمن الحالي على الخريطة (تُحدَّث مع حركته)
+  const renderSimulation = useCallback(async (snapshot: SimSnapshot | null) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!snapshot?.exists || snapshot.status !== "active") {
+      clearSimulationMarkers();
+      return;
+    }
+
+    const trips = snapshot.trips || [];
+    simTripsRef.current = Object.fromEntries(trips.map((t) => [t.id, t]));
+    const seen = new Set<string>();
+    let activeNow = 0;
+
+    await Promise.all(trips.map(async (t) => {
+      seen.add(t.id);
+      const inTrip = t.status === "in_progress";
+      if (inTrip) activeNow += 1;
+
+      let pos: Coord = t.status === "completed"
+        ? [Number(t.dropoff.lng), Number(t.dropoff.lat)]
+        : [Number(t.pickup.lng), Number(t.pickup.lat)];
+
+      if (inTrip) {
+        try {
+          let route = simRouteCache.current[t.id];
+          if (!route) {
+            route = await fetchRoute([
+              [Number(t.pickup.lng), Number(t.pickup.lat)],
+              [Number(t.dropoff.lng), Number(t.dropoff.lat)],
+            ]);
+            simRouteCache.current[t.id] = route;
+          }
+          if (route.length >= 2) pos = routePointAt(route, t.progress).point;
+        } catch {
+          pos = [Number(t.captain.lng), Number(t.captain.lat)];
+        }
+      }
+
+      const color = inTrip ? SIM_TRIP_COLOR : SIM_IDLE_COLOR;
+      let marker = simMarkersRef.current[t.id];
+      if (!marker) {
+        const el = document.createElement("div");
+        el.className = "carMarker simCarMarker";
+        el.style.cursor = "pointer";
+        el.title = t.captain_name;
+        const img = document.createElement("img");
+        img.className = "carImg";
+        img.src = carMarkerSvg(color);
+        img.width = 34; img.height = 34;
+        el.append(img);
+        el.addEventListener("click", (ev) => { ev.stopPropagation(); void showSimRoute(t.id); });
+        marker = new maplibregl.Marker({ element: el }).setLngLat(pos).addTo(map);
+        simMarkersRef.current[t.id] = marker;
+      } else {
+        marker.setLngLat(pos);
+        const img = marker.getElement().querySelector("img") as HTMLImageElement;
+        if (img) img.src = carMarkerSvg(color);
+      }
+    }));
+
+    for (const id of Object.keys(simMarkersRef.current)) {
+      if (!seen.has(id)) { simMarkersRef.current[id].remove(); delete simMarkersRef.current[id]; }
+    }
+    setSimCount(trips.length);
+    setSimActive(activeNow);
+  }, [clearSimulationMarkers, showSimRoute]);
+
+  const load = useCallback(async () => {
+    const [realRes, simRes] = await Promise.all([
+      supabase.rpc("admin_captains_on_map"),
+      supabase.rpc("admin_simulation_snapshot"),
+    ]);
+    if (realRes.data) render(realRes.data as CaptainPin[]);
+    if (!simRes.error) await renderSimulation((simRes.data as SimSnapshot) || null);
+  }, [render, renderSimulation]);
+
   const showMe = useCallback((lat: number, lng: number) => {
     const map = mapRef.current; if (!map) return;
     if (!meMarkerRef.current) {
@@ -179,10 +347,9 @@ export default function AdminMap() {
       center: [CAIRO.lng, CAIRO.lat], zoom: 10,
     });
     mapRef.current = map;
-    map.on("load", () => { map.resize(); load(); });
+    map.on("load", () => { map.resize(); void load(); });
     setTimeout(() => map.resize(), 300);
 
-    // تحديد موقع الأدمن الحالي تلقائيًا بمجرد فتح الخريطة
     let watchId: number | null = null;
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -190,7 +357,7 @@ export default function AdminMap() {
           showMe(p.coords.latitude, p.coords.longitude);
           map.jumpTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 13 });
         },
-        () => { /* لو رفض الإذن تبقى الخريطة على العرض الافتراضي */ },
+        () => {},
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
       watchId = navigator.geolocation.watchPosition(
@@ -200,36 +367,41 @@ export default function AdminMap() {
       );
     }
 
-    // تحديث دوري كل 15 ثانية + realtime — مع تحديث المسار المعروض إن وُجد
     const tick = () => {
-      load();
+      void load();
       const s = selectedRef.current;
-      if (s) showRoute(s.id, s.name, true);
+      if (s?.kind === "real") void showRoute(s.id, s.name, true);
+      if (s?.kind === "sim") void showSimRoute(s.id, true);
     };
-    const interval = setInterval(tick, 15000);
+    const interval = window.setInterval(tick, 5_000);
     const ch = supabase.channel("admin-map")
       .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, tick)
       .subscribe();
 
     return () => {
-      clearInterval(interval);
-      supabase.removeChannel(ch);
+      window.clearInterval(interval);
+      void supabase.removeChannel(ch);
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       meMarkerRef.current?.remove(); meMarkerRef.current = null;
-      map.remove(); mapRef.current = null; markersRef.current = {};
+      for (const id of Object.keys(simMarkersRef.current)) simMarkersRef.current[id].remove();
+      map.remove(); mapRef.current = null; markersRef.current = {}; simMarkersRef.current = {};
     };
-  }, [load, showRoute, showMe]);
+  }, [load, showRoute, showSimRoute, showMe]);
 
   return (
     <section className="panel">
       <div className="panelHead">
         <h2>خريطة الكباتن المتصلين</h2>
-        <p>{count} كابتن متصل الآن · تتحدّث تلقائيًا</p>
+        <p>
+          {count} كابتن حقيقي متصل الآن
+          {simCount > 0 ? ` · ${simCount} سيارة بث (${simActive} في رحلة)` : ""}
+          {" · تتحدّث تلقائيًا"}
+        </p>
       </div>
       <div className="mapLegend">
         <span><i style={{ background: "#3b82f6", border: "2px solid #fff" }} /> موقعي</span>
         <span><i style={{ background: "#1fbf8f" }} /> متحرك</span>
-        <span><i style={{ background: "#93a1c0" }} /> ثابت</span>
+        <span><i style={{ background: "#93a1c0" }} /> ثابت / بث متوقف</span>
         <span><i style={{ background: "#3b82f6" }} /> في رحلة</span>
       </div>
       {selectedName && (
@@ -238,7 +410,7 @@ export default function AdminMap() {
           <button onClick={() => { setSelectedName(null); selectedRef.current = null; clearRoute(); }}>مسح المسار</button>
         </div>
       )}
-      <p className="mapTip">اضغط على أي كابتن لعرض مسار رحلته الجارية — الرمادي ما قطعه والأزرق المتبقي</p>
+      <p className="mapTip">اضغط على أي سيارة في رحلة لعرض مسارها — الرمادي ما قطعته والأزرق المتبقي</p>
       <div ref={containerRef} className="adminMapCanvas" />
     </section>
   );
