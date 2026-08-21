@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { useAuth } from "./lib/AuthContext";
 import AuthPage from "./pages/AuthPage";
-import LiveNetworkActivity from "./components/LiveNetworkActivity";
 
 const CustomerApp = lazy(() => import("./roles/CustomerApp"));
 const CaptainApp = lazy(() => import("./roles/CaptainApp"));
@@ -65,10 +64,5 @@ export default function RoleRouter() {
       roleApp = <CustomerApp />;
   }
 
-  return (
-    <Suspense fallback={roleFallback}>
-      {roleApp}
-      {profile.role !== "admin" && <LiveNetworkActivity />}
-    </Suspense>
-  );
+  return <Suspense fallback={roleFallback}>{roleApp}</Suspense>;
 }
