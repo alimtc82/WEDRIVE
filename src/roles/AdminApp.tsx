@@ -10,8 +10,9 @@ import AdminPlaces from "./AdminPlaces";
 import AdminOnlineCaptains from "./AdminOnlineCaptains";
 import AdminSimulation from "./AdminSimulation";
 import AdminParentPlaceBridge from "./AdminParentPlaceBridge";
+import AdminLegalRecords from "./AdminLegalRecords";
 
-type Tab = "overview" | "map" | "captains" | "online" | "ratings" | "pricing" | "places" | "simulation";
+type Tab = "overview" | "map" | "captains" | "online" | "ratings" | "pricing" | "places" | "simulation" | "legal";
 
 export default function AdminApp() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -57,6 +58,7 @@ export default function AdminApp() {
           <button className={tab === "ratings" ? "on" : ""} onClick={() => setTab("ratings")}>التقييمات</button>
           <button className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>تسهيلات الاستخدام</button>
           <button className={tab === "pricing" ? "on" : ""} onClick={() => setTab("pricing")}>إعدادات التسعير والنطاق</button>
+          <button className={tab === "legal" ? "on" : ""} onClick={() => setTab("legal")}>السجلات القانونية</button>
           <button className={tab === "simulation" ? "on" : ""} onClick={() => setTab("simulation")}>بث تجريبي</button>
         </div>
 
@@ -66,6 +68,7 @@ export default function AdminApp() {
         {tab === "places" && <><AdminPlaces /><AdminParentPlaceBridge active /></>}
         {tab === "online" && <AdminOnlineCaptains onBack={() => setTab("overview")} />}
         {tab === "captains" && <AdminCaptains />}
+        {tab === "legal" && <AdminLegalRecords />}
         {tab === "simulation" && <AdminSimulation />}
 
         {tab === "pricing" && settings && (
