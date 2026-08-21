@@ -4,8 +4,9 @@
   --danger:#e2564a; --accent:#3b82f6; --radius:12px;
 }
 *{box-sizing:border-box}
-html,body{max-width:100%;overflow-x:hidden}
-body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:var(--navy);color:var(--ink)}
+html,body,#root{width:100%;min-height:100%;max-width:100%;overflow-x:hidden}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:var(--navy);color:var(--ink);overscroll-behavior-y:none;touch-action:manipulation}
 input,button{font-family:inherit}
 
 .fullCenter{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)}
@@ -44,7 +45,7 @@ input,button{font-family:inherit}
 .authNote button{background:0;border:0;color:var(--green);cursor:pointer;font-size:13px}
 
 /* ===== Role shell ===== */
-.roleShell{min-height:100vh;display:flex;flex-direction:column}
+.roleShell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-right,0px)) 12px calc(18px + env(safe-area-inset-left,0px));background:var(--navy2);border-bottom:1px solid var(--line)}
 .topbarBrand{display:flex;align-items:center;gap:10px}
 .topbarUser{display:flex;align-items:center;gap:10px}
@@ -141,11 +142,37 @@ input,button{font-family:inherit}
 .mapCanvas{width:100%;height:280px;border-radius:10px;overflow:hidden}
 .mapHint{font-size:12px;color:var(--muted);text-align:center;margin:8px 0 0}
 .pickerDone{width:100%;margin-top:8px;padding:9px;background:var(--green);color:#04241c;border:0;border-radius:8px;font-weight:700;cursor:pointer}
+.pickerDone:disabled{opacity:.5;cursor:not-allowed}
+.pickerActions{display:flex;gap:8px;margin-top:8px}
+.pickerActions .pickerDone{flex:2;margin-top:0}
+.pickerBack{flex:1;padding:10px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer}
 .mapPin{width:22px;height:30px;background:var(--green);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:grab}
 .mapPin.green{background:var(--green)}
 .mapPin.red{background:var(--danger)}
 .distVal{color:var(--ink)!important}
 .fareBox>div{display:flex;flex-direction:column;gap:2px}
+
+/* خريطة واحدة لاختيار نقطتي الانطلاق والوصول بالتتابع */
+.routePicker{margin-bottom:12px}
+.routePickerSummary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.routePickerSummary button{min-width:0;display:flex;align-items:center;gap:8px;padding:10px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);text-align:right;cursor:pointer}
+.routePickerSummary button.active{border-color:var(--green);box-shadow:0 0 0 2px rgba(31,191,143,.12)}
+.routePickerSummary button:disabled{opacity:.55;cursor:not-allowed}
+.routePickerSummary i{width:10px;height:10px;border-radius:50%;flex:none}
+.routePickerSummary span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.routePickerSummary small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+.routePickerStage>h3{margin:10px 0 2px;font-size:15px}
+.routePickerStage>p{margin:0 0 6px;color:var(--muted);font-size:12px}
+.routePickerStage .pickerMap{margin-top:0}
+.routeEditBtn{width:100%;padding:10px;background:var(--navy);border:1px solid var(--green);color:var(--green);border-radius:9px;font-weight:700;cursor:pointer}
+
+@media(max-width:520px){
+  input,select,textarea{font-size:16px!important}
+  .roleMain{padding-inline:10px}
+  .panel{padding:14px}
+  .mapCanvas{height:min(46dvh,320px);touch-action:none}
+  .routePickerSummary{grid-template-columns:1fr}
+}
 
 .verTag{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.6;pointer-events:none;z-index:5}
 

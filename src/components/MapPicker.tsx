@@ -19,6 +19,17 @@ interface Props {
   onPlaceSelect?: (placeId: string | null) => void;
 }
 
+interface RouteMapPickerProps {
+  pickup: LatLng | null;
+  pickupAddress: string;
+  dropoff: LatLng | null;
+  dropoffAddress: string;
+  onPickupChange: (loc: LatLng, address: string) => void;
+  onDropoffChange: (loc: LatLng, address: string) => void;
+  onPickupPlaceSelect?: (placeId: string | null) => void;
+  onDropoffPlaceSelect?: (placeId: string | null) => void;
+}
+
 // مركز افتراضي: القاهرة
 const CAIRO: LatLng = { lat: 30.0444, lng: 31.2357 };
 // نمط بلاطات نقطية من OpenStreetMap مباشرة — الأكثر موثوقية (بدون مفتاح)
@@ -57,18 +68,101 @@ export default function MapPicker({ label, color, value, address, autoLocate, on
         <span>{address || "اضغط للاختيار على الخريطة"}</span>
       </button>
       {open && (
-        <MapPanel color={color} value={value} autoLocate={autoLocate} onChange={onChange} onPlaceSelect={onPlaceSelect} onClose={() => setOpen(false)} />
+        <MapPanel color={color} value={value} autoLocate={autoLocate} onChange={onChange}
+          onPlaceSelect={onPlaceSelect} actionLabel="تم" onConfirm={() => setOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+export function RouteMapPicker({
+  pickup, pickupAddress, dropoff, dropoffAddress,
+  onPickupChange, onDropoffChange, onPickupPlaceSelect, onDropoffPlaceSelect,
+}: RouteMapPickerProps) {
+  type Step = "pickup" | "dropoff" | "done";
+  const initialStep: Step = pickup && dropoff ? "done" : pickup ? "dropoff" : "pickup";
+  const [step, setStep] = useState<Step>(initialStep);
+  const [draft, setDraft] = useState<LatLng | null>(initialStep === "dropoff" ? dropoff : pickup);
+  const [draftAddress, setDraftAddress] = useState(initialStep === "dropoff" ? dropoffAddress : pickupAddress);
+  const [draftPlaceId, setDraftPlaceId] = useState<string | null>(null);
+
+  const updateDraft = useCallback((loc: LatLng, address: string) => {
+    setDraft(loc);
+    setDraftAddress(address);
+  }, []);
+
+  const editPickup = () => {
+    setDraft(pickup);
+    setDraftAddress(pickupAddress);
+    setDraftPlaceId(null);
+    setStep("pickup");
+  };
+
+  const editDropoff = () => {
+    setDraft(dropoff);
+    setDraftAddress(dropoffAddress);
+    setDraftPlaceId(null);
+    setStep("dropoff");
+  };
+
+  const confirmPickup = () => {
+    if (!draft) return;
+    onPickupChange(draft, draftAddress);
+    onPickupPlaceSelect?.(draftPlaceId);
+    setDraft(dropoff);
+    setDraftAddress(dropoffAddress);
+    setDraftPlaceId(null);
+    setStep("dropoff");
+  };
+
+  const confirmDropoff = () => {
+    if (!draft) return;
+    onDropoffChange(draft, draftAddress);
+    onDropoffPlaceSelect?.(draftPlaceId);
+    setStep("done");
+  };
+
+  return (
+    <div className="routePicker">
+      <div className="routePickerSummary">
+        <button type="button" className={step === "pickup" ? "active" : ""} onClick={editPickup}>
+          <i className="dotFrom" /><span><small>نقطة الانطلاق</small>{pickupAddress || "لم يتم تأكيدها"}</span>
+        </button>
+        <button type="button" className={step === "dropoff" ? "active" : ""} onClick={editDropoff} disabled={!pickup}>
+          <i className="dotTo" /><span><small>نقطة الوصول</small>{dropoffAddress || "لم يتم تأكيدها"}</span>
+        </button>
+      </div>
+
+      {step !== "done" && (
+        <div className="routePickerStage">
+          <h3>{step === "pickup" ? "حدد نقطة الانطلاق" : "حدد نقطة الوصول"}</h3>
+          <p>ضع الدبوس على الموقع المطلوب ثم اضغط زر التأكيد.</p>
+          <MapPanel key={step} color={step === "pickup" ? "green" : "red"}
+            value={draft} autoLocate={step === "pickup" && !pickup}
+            onChange={updateDraft} onPlaceSelect={setDraftPlaceId}
+            actionLabel={step === "pickup" ? "تأكيد نقطة الانطلاق" : "تأكيد نقطة الوصول"}
+            onConfirm={step === "pickup" ? confirmPickup : confirmDropoff}
+            confirmDisabled={!draft}
+            onBack={step === "dropoff" ? editPickup : undefined} />
+        </div>
+      )}
+
+      {step === "done" && (
+        <button type="button" className="routeEditBtn" onClick={editPickup}>تعديل نقاط الرحلة</button>
       )}
     </div>
   );
 }
 
 function MapPanel({
-  color, value, autoLocate, onChange, onPlaceSelect, onClose,
-}: { color: PinColor; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"]; onPlaceSelect?: Props["onPlaceSelect"]; onClose: () => void; }) {
+  color, value, autoLocate, onChange, onPlaceSelect, actionLabel, onConfirm, confirmDisabled, onBack,
+}: { color: PinColor; value: LatLng | null; autoLocate?: boolean; onChange: Props["onChange"];
+  onPlaceSelect?: Props["onPlaceSelect"]; actionLabel: string; onConfirm: () => void;
+  confirmDisabled?: boolean; onBack?: () => void; }) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const initialValueRef = useRef(value);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ name: string; loc: LatLng }[]>([]);
   const [localPlaces, setLocalPlaces] = useState<KnownPlace[]>([]);
@@ -101,11 +195,11 @@ function MapPanel({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: STYLE,
-      center: value ? [value.lng, value.lat] : [CAIRO.lng, CAIRO.lat],
-      zoom: value ? 14 : 10,
+      center: initialValueRef.current ? [initialValueRef.current.lng, initialValueRef.current.lat] : [CAIRO.lng, CAIRO.lat],
+      zoom: initialValueRef.current ? 14 : 10,
     });
     mapRef.current = map;
-    if (value) setMarker(value);
+    if (initialValueRef.current) setMarker(initialValueRef.current);
 
     // زر الموقع الحالي (أيقونة السهم) — يظهر في الخريطة
     const geolocate = new maplibregl.GeolocateControl({
@@ -130,7 +224,7 @@ function MapPanel({
       const c = map.getCenter();
       map.jumpTo({ center: [c.lng, c.lat], zoom: map.getZoom() });
       // لو مطلوب التحديد التلقائي ولسه مفيش موقع محدد، شغّل تحديد الموقع
-      if (autoLocate && !value) {
+      if (autoLocate && !initialValueRef.current) {
         setTimeout(() => geolocate.trigger(), 400);
       }
     });
@@ -145,7 +239,7 @@ function MapPanel({
     });
 
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
-  }, [value, autoLocate, setMarker, onChange, onPlaceSelect]);
+  }, [autoLocate, setMarker, onChange, onPlaceSelect]);
 
   // التعرّف على إحداثيات ملصوقة من خرائط جوجل أثناء الكتابة
   useEffect(() => {
@@ -261,7 +355,10 @@ function MapPanel({
       )}
       <div ref={containerRef} className="mapCanvas" />
       <p className="mapHint">اضغط على الخريطة أو اسحب الدبوس لتحديد الموقع بدقة</p>
-      <button type="button" className="pickerDone" onClick={onClose}>تم</button>
+      <div className="pickerActions">
+        {onBack && <button type="button" className="pickerBack" onClick={onBack}>تراجع</button>}
+        <button type="button" className="pickerDone" onClick={onConfirm} disabled={confirmDisabled}>{actionLabel}</button>
+      </div>
     </div>
   );
 }
