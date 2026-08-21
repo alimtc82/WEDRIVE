@@ -3,11 +3,16 @@
   "appName": "كابتن بنها",
   "webDir": "dist/client",
   "bundledWebRuntime": false,
+  "_ملاحظة_مهمة": "server.url مخصص للتحديثات التجريبية فقط أثناء فترة الفحص والاختبار — يُحذف سطر server بالكامل عند بناء نسخة النشر النهائية للمتاجر",
+  "server": {
+    "url": "https://wedrive.mtc-group.online",
+    "cleartext": false
+  },
   "plugins": {
     "StatusBar": {
       "overlaysWebView": false,
       "style": "DARK",
-      "backgroundColor": "#16213e"
+      "backgroundColor": "#f2f5fa"
     }
   }
 }
