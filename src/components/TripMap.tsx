@@ -134,7 +134,6 @@ export default function TripMap({ tripId, status }: Props) {
       paintProgress(route, cap);
       focusRoute(route, cap);
     } catch {
-      // لا نعرض خطوطًا مستقيمة وهمية. نترك الخريطة بعلاماتها فقط ونعاود المحاولة مع التحديث التالي.
       setRouteError(true);
       setLine("routeDone", [], DONE_COLOR, 6);
       setLine("routeNext", [], beforeStart ? NEXT_PICKUP : NEXT_TRIP, 5);
@@ -170,7 +169,6 @@ export default function TripMap({ tripId, status }: Props) {
       }
     }
 
-    // لا نعمل fitBounds مع كل تحديث GPS؛ الفوكس يتم على هندسة المسار الحقيقي مرة لكل مرحلة.
     void drawRoute(d);
   }, [drawRoute]);
 
@@ -189,21 +187,38 @@ export default function TripMap({ tripId, status }: Props) {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({ container: containerRef.current, style: STYLE, center: [31.2357, 30.0444], zoom: 11 });
     mapRef.current = map;
-    map.on("load", () => { map.resize(); setReady(true); load(); });
+    map.on("load", () => { map.resize(); setReady(true); void load(); });
     const resizeTimer = window.setTimeout(() => map.resize(), 300);
 
-    const interval = window.setInterval(load, 15000);
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void load();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        map.resize();
+        refresh();
+      }
+    };
+
+    const interval = window.setInterval(refresh, 8_000);
     const ch = supabase.channel("trip-map-" + tripId)
-      .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, () => load())
-      .on("postgres_changes", {
-        event: "*", schema: "public", table: "trips", filter: `id=eq.${tripId}`,
-      }, () => load())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, () => { void load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => { void load(); })
+      .subscribe((state) => {
+        if (state === "SUBSCRIBED") void load();
+      });
+
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       window.clearTimeout(resizeTimer);
       window.clearInterval(interval);
-      supabase.removeChannel(ch);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+      void supabase.removeChannel(ch);
       map.remove();
       mapRef.current = null;
       markers.current = { stops: [] };
