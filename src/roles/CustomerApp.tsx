@@ -4,6 +4,7 @@ import type { Settings, TripKind } from "../lib/types";
 import { drivingRouteKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
 import CustomerMapPlanner from "../components/CustomerMapPlanner";
+import CustomerHelpGuide from "../components/CustomerHelpGuide";
 import ActiveTrip from "../components/ActiveTrip";
 import CustomerOffers from "./CustomerOffers";
 import MyTrips from "../pages/MyTrips";
@@ -14,12 +15,12 @@ const MAX_STOPS = 3;
 const roundFareDownTo5 = (value: number) => Math.floor(value / 5) * 5;
 interface StopEntry { loc: LatLng | null; addr: string; }
 interface FixedRoute { id: string; name: string | null; from_place_id: string; from_name: string; from_lat: number; from_lng: number; to_place_id: string; to_name: string; to_lat: number; to_lng: number; price: number; reverse_price: number | null; }
-
 type CustomerTab = "home" | "trips" | "ratings";
 
 export default function CustomerApp() {
   const [tab, setTab] = useState<CustomerTab>("home");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [helpReplay, setHelpReplay] = useState(0);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [activeTrip, setActiveTrip] = useState<{ id: string; status: string } | null>(null);
   const [pickup, setPickup] = useState<LatLng | null>(null);
@@ -131,6 +132,7 @@ export default function CustomerApp() {
   };
 
   const navTo = (next: CustomerTab) => { setTab(next); setMenuOpen(false); };
+  const replayHelp = () => { setTab("home"); setMenuOpen(false); setHelpReplay(v => v + 1); };
 
   const beginDetailsDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     detailsDragStart.current = { y: e.clientY, last: e.clientY };
@@ -176,9 +178,11 @@ export default function CustomerApp() {
           <button className={tab === "home" ? "on" : ""} onClick={() => navTo("home")}>⌂ الرئيسية</button>
           <button className={tab === "trips" ? "on" : ""} onClick={() => navTo("trips")}>🚕 رحلاتي</button>
           <button className={tab === "ratings" ? "on" : ""} onClick={() => navTo("ratings")}>★ تقييماتي</button>
+          <button type="button" onClick={replayHelp}>👨‍✈️ شرح استخدام الخريطة</button>
         </nav>
       </div>}
       {tab === "trips" && <MyTrips isCustomer onPickFavorite={pickFavorite}/>} {tab === "ratings" && <MyRatings/>}
+      {tab === "home" && !activeTrip && <CustomerHelpGuide replayKey={helpReplay}/>} 
       {tab === "home" && (activeTrip?.status === "pending" ? <CustomerOffers tripId={activeTrip.id} onAccepted={() => void checkActive()} onCancel={() => { setActiveTrip(null); void checkActive(); }}/> : activeTrip ? <ActiveTrip onDone={() => { setActiveTrip(null); void checkActive(); }}/> : <CustomerMapPlanner
         pickup={pickup} pickupAddress={pickupAddr} dropoff={dropoff} dropoffAddress={dropoffAddr}
         stops={stops}
