@@ -6,6 +6,7 @@ import "./styles.css";
 import "./stops.css";
 import "./places.css";
 import "./blueTheme.css";
+import "./customerWelcomeGuide.css";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
