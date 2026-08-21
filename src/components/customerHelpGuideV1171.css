@@ -1,0 +1,59 @@
+/* v1.17.1 — مساعد كابتن بنها: أفاتار مقصوص يسار، نص يمين، وخلفية شبه شفافة. */
+.cbHelpToast.cbHelpToastV1171{
+  top:clamp(292px,34dvh,382px);
+  right:12px;
+  left:12px;
+  max-width:760px;
+  margin-inline:auto;
+  display:grid;
+  grid-template-columns:116px minmax(0,1fr);
+  grid-template-rows:1fr;
+  gap:10px;
+  align-items:center;
+  padding:12px 16px 12px 10px;
+  direction:ltr;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:24px;
+  background:rgba(15,23,42,.78);
+  box-shadow:0 16px 38px rgba(15,23,42,.25);
+  -webkit-backdrop-filter:blur(12px) saturate(125%);
+  backdrop-filter:blur(12px) saturate(125%);
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  overflow:visible;
+}
+.cbHelpToast.cbHelpToastV1171:active{cursor:grabbing}
+.cbHelpToastV1171 .cbHelpClose{left:auto;right:8px;top:8px;z-index:5}
+.cbHelpToastV1171 .cbHelpDrag,.cbHelpToastV1171 .cbHelpArrow{display:none!important}
+.cbHelpToastV1171 .cbHelpCopy{grid-column:2;direction:rtl;text-align:right;padding-right:8px;padding-left:4px;gap:4px}
+.cbHelpToastV1171 .cbHelpCopy b{font-size:17px;line-height:1.35}
+.cbHelpToastV1171 .cbHelpCopy span{font-size:13px;line-height:1.65;color:#eff6ff}
+.cbHelpToastV1171 .cbHelpCopy small{font-size:10px;color:#bfdbfe;opacity:.9}
+
+/* نستخدم نفس الأفاتار المعتمد في 1.17.0 مع قص الجزء الخاص بالشخصية فقط. */
+.cbHelpToastV1171 .cbDriverAvatar{
+  grid-column:1;
+  width:116px;
+  height:154px;
+  margin:-24px 0 -14px -2px;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background-color:transparent;
+  background-repeat:no-repeat;
+  background-size:172% auto;
+  background-position:left 2%;
+  clip-path:polygon(3% 10%,36% 1%,58% 5%,66% 20%,61% 31%,78% 38%,100% 48%,97% 64%,78% 67%,65% 57%,70% 100%,4% 100%,0 66%);
+}
+
+/* لون الوصول موحّد مع الدبوس الأزرق على الخريطة. */
+.cmpPointRow.dropoff .cmpDot,.cmpMiniRoute .cmpDot.red{background:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+
+@media(max-width:390px){
+  .cbHelpToast.cbHelpToastV1171{top:clamp(270px,32dvh,330px);right:8px;left:8px;grid-template-columns:92px minmax(0,1fr);padding:10px 12px 10px 6px;border-radius:20px}
+  .cbHelpToastV1171 .cbDriverAvatar{width:94px;height:126px;margin:-18px 0 -10px -1px}
+  .cbHelpToastV1171 .cbHelpCopy{padding-right:5px}.cbHelpToastV1171 .cbHelpCopy b{font-size:14px}.cbHelpToastV1171 .cbHelpCopy span{font-size:11.5px;line-height:1.55}
+}
+@media(max-height:650px){.cbHelpToast.cbHelpToastV1171{top:220px}}
+[data-theme="dark"] .cbHelpToast.cbHelpToastV1171{background:rgba(2,6,23,.78);border-color:rgba(96,165,250,.25)}
