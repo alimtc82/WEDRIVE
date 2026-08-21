@@ -12,6 +12,7 @@ import MyRatings from "../pages/MyRatings";
 import "../listPages.css";
 
 const MAX_STOPS = 3;
+const roundFareDownTo5 = (value: number) => Math.floor(value / 5) * 5;
 
 interface StopEntry { loc: LatLng | null; addr: string; }
 
@@ -57,13 +58,33 @@ export default function CustomerApp() {
   }, []);
 
   useEffect(() => {
-    checkActive();
+    void checkActive();
+
+    // لا نعتمد على Realtime وحده في الويب؛ بعض المتصفحات تعلق websocket بعد النوم/تغيير الشبكة.
     const ch = supabase.channel("cust-active")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "trips", filter: `customer_id=eq.${profile!.id}`,
-      }, () => checkActive())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+        event: "*", schema: "public", table: "trips",
+      }, () => { void checkActive(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void checkActive();
+      });
+
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void checkActive();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    const timer = window.setInterval(refresh, 8_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+      void supabase.removeChannel(ch);
+    };
   }, [checkActive, profile]);
 
   useEffect(() => {
@@ -112,7 +133,7 @@ export default function CustomerApp() {
         setKind(k);
         const ppk = k === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
         const raw = Math.round(d * ppk * 100) / 100;
-        setFare(Math.max(raw, settings.min_fare));
+        setFare(roundFareDownTo5(Math.max(raw, settings.min_fare)));
       })
       .catch(() => {
         if (cancelled) return;
@@ -131,7 +152,7 @@ export default function CustomerApp() {
     if (distance == null || !settings) return;
     const ppk = kind === "intercity" ? settings.price_per_km_intercity : settings.price_per_km_in_city;
     const raw = Math.round(distance * ppk * 100) / 100;
-    setFare(Math.max(raw, settings.min_fare));
+    setFare(roundFareDownTo5(Math.max(raw, settings.min_fare)));
   }, [kind, distance, settings]);
 
   const pickFixedRoute = (r: FixedRoute, reversed: boolean) => {
@@ -171,7 +192,7 @@ export default function CustomerApp() {
     setPickupPlaceId(null); setDropoffPlaceId(null); setFixedPrice(null);
     setStops([]); setPickedRouteId(null);
     setDistance(null); setFare(null); setRouteError("");
-    checkActive();
+    void checkActive();
   };
 
   const pickFavorite = (t: { pickup: LatLng; pickupAddr: string; dropoff: LatLng; dropoffAddr: string }) => {
@@ -199,10 +220,10 @@ export default function CustomerApp() {
           <>
             {activeTrip && activeTrip.status === "pending" ? (
               <CustomerOffers tripId={activeTrip.id}
-                onAccepted={() => checkActive()}
-                onCancel={() => { setActiveTrip(null); checkActive(); }} />
+                onAccepted={() => void checkActive()}
+                onCancel={() => { setActiveTrip(null); void checkActive(); }} />
             ) : activeTrip ? (
-              <ActiveTrip onDone={() => { setActiveTrip(null); checkActive(); }} />
+              <ActiveTrip onDone={() => { setActiveTrip(null); void checkActive(); }} />
             ) : (
               <section className="panel">
                 <div className="panelHead">
@@ -281,7 +302,7 @@ export default function CustomerApp() {
                   </div>
                   <div style={{ textAlign: "left" }}>
                     <span>السعر المقترح</span>
-                    <b>{routeLoading ? "..." : (fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(2)} ج.م` : "—"}</b>
+                    <b>{routeLoading ? "..." : (fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(0)} ج.م` : "—"}</b>
                   </div>
                 </div>
 
