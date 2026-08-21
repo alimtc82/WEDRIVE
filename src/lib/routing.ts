@@ -1,15 +1,29 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
-// يجلب مسار قيادة حقيقي عبر الشوارع. لا نرجع خطًا مستقيمًا عند فشل التوجيه
-// حتى لا يظهر للمستخدم مسار وهمي وكأنه طريق صالح.
 export type Coord = [number, number]; // [lng, lat]
+export interface RouteDetails {
+  coordinates: Coord[];
+  distanceM: number | null;
+  durationSec: number | null;
+}
 
 const ROUTERS = [
   "https://router.project-osrm.org/route/v1/driving/",
   "https://routing.openstreetmap.de/routed-car/route/v1/driving/",
 ];
 
-async function requestNativeRoute(url: string): Promise<Coord[] | null> {
+function parseRoute(data: any): RouteDetails | null {
+  const route = data?.routes?.[0];
+  const coords = route?.geometry?.coordinates ?? data?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  return {
+    coordinates: coords as Coord[],
+    distanceM: Number(route?.distance ?? data?.distance_m) || null,
+    durationSec: Number(route?.duration ?? data?.duration_s) || null,
+  };
+}
+
+async function requestNativeRoute(url: string): Promise<RouteDetails | null> {
   try {
     const res = await CapacitorHttp.get({
       url,
@@ -18,21 +32,18 @@ async function requestNativeRoute(url: string): Promise<Coord[] | null> {
     });
     if (res.status < 200 || res.status >= 300) return null;
     const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-    const coords = data?.routes?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coords) || coords.length < 2) return null;
-    return coords as Coord[];
+    return parseRoute(data);
   } catch {
     return null;
   }
 }
 
-async function requestWebRoute(points: Coord[]): Promise<Coord[] | null> {
+async function requestWebRoute(points: Coord[]): Promise<RouteDetails | null> {
   try {
     const qs = encodeURIComponent(points.map((p) => `${p[0]},${p[1]}`).join(";"));
     const ctrl = new AbortController();
     const timer = window.setTimeout(() => ctrl.abort(), 10_000);
     try {
-      // Same-origin Vercel function: avoids browser CORS/provider differences.
       const res = await fetch(`/api/route?points=${qs}`, {
         signal: ctrl.signal,
         cache: "no-store",
@@ -40,9 +51,7 @@ async function requestWebRoute(points: Coord[]): Promise<Coord[] | null> {
       });
       if (!res.ok) return null;
       const data = await res.json();
-      const coords = data?.coordinates;
-      if (!Array.isArray(coords) || coords.length < 2) return null;
-      return coords as Coord[];
+      return parseRoute(data);
     } finally {
       window.clearTimeout(timer);
     }
@@ -51,7 +60,7 @@ async function requestWebRoute(points: Coord[]): Promise<Coord[] | null> {
   }
 }
 
-export async function fetchRoute(points: Coord[]): Promise<Coord[]> {
+export async function fetchRouteDetails(points: Coord[]): Promise<RouteDetails> {
   if (points.length < 2) throw new Error("ROUTE_POINTS_MISSING");
 
   if (!Capacitor.isNativePlatform()) {
@@ -68,4 +77,8 @@ export async function fetchRoute(points: Coord[]): Promise<Coord[]> {
   }
 
   throw new Error("ROUTE_UNAVAILABLE");
+}
+
+export async function fetchRoute(points: Coord[]): Promise<Coord[]> {
+  return (await fetchRouteDetails(points)).coordinates;
 }
