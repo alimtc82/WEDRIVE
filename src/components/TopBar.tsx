@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 import { BrandMark } from "../lib/brand";
-
-const APP_VERSION = "1.16.6";
+import { APP_VERSION } from "../lib/version";
 
 const roleLabel: Record<string, string> = {
   customer: "عميل",
