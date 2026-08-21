@@ -1,0 +1,9 @@
+.cmpTopCard.guided{outline:3px solid rgba(37,99,235,.28);outline-offset:3px;box-shadow:0 14px 34px rgba(37,99,235,.24)}
+.cmpWelcomeGuide{position:absolute;z-index:11;right:18px;left:18px;display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center;padding:14px 16px 15px;border-radius:22px;background:rgba(15,23,42,.94);color:#fff;box-shadow:0 16px 38px rgba(15,23,42,.30);backdrop-filter:blur(14px);animation:cmpGuideIn .28s ease-out}
+.cmpGuideAvatar{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#2563eb,#0ea5e9);font-size:27px;box-shadow:0 6px 18px rgba(37,99,235,.35);border:2px solid rgba(255,255,255,.85)}
+.cmpGuideText{display:grid;gap:3px;line-height:1.5}.cmpGuideText b{font-size:16px}.cmpGuideText span{font-size:13px;color:#dbeafe}.cmpGuideText strong{color:#93c5fd}
+.cmpGuideClose{position:absolute;top:6px;left:7px;width:28px;height:28px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:20px;line-height:1}.cmpGuideArrow{position:absolute;top:-30px;right:50%;font-style:normal;font-size:34px;font-weight:900;color:#2563eb;text-shadow:0 2px 0 #fff;animation:cmpGuideArrow 1s ease-in-out infinite}
+@keyframes cmpGuideIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes cmpGuideArrow{50%{transform:translateY(-5px)}}
+@media(max-width:640px){.cmpWelcomeGuide{right:12px;left:12px}.cmpGuideAvatar{width:44px;height:44px;font-size:24px}.cmpGuideText b{font-size:15px}.cmpGuideText span{font-size:12.5px}}
+[data-theme="dark"] .cmpWelcomeGuide{background:rgba(2,6,23,.96);border:1px solid rgba(96,165,250,.22)}
