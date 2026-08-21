@@ -1,10 +1,10 @@
 {
   "name": "captain-banha",
-  "version": "1.16.18",
+  "version": "1.17.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts --configLoader runner",
     "check": "npm run typecheck && npm test && npm run build",
