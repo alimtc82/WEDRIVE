@@ -51,4 +51,3 @@ npx cap sync
 
 ## Working style with the user
 - User: Ali (Arabic/Egyptian speaker) — respond in Egyptian Arabic, full-width Arabic punctuation, numbered step-by-step instructions; he follows along with screenshots — verify each stage from the screenshot before moving on.
-
