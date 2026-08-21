@@ -3,6 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "../lib/supabase";
 import type { LatLng } from "../lib/geo";
+import { findArabicMatch } from "../lib/arabicSearch";
 
 type PinColor = "green" | "red" | "amber";
 
@@ -56,6 +57,24 @@ function parseCoordsInput(text: string): LatLng | null {
   if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
+}
+
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+  const match = findArabicMatch(text, query);
+  if (!match) return <>{text}</>;
+  return <>{text.slice(0, match.start)}<mark className="hl">{text.slice(match.start, match.start + match.length)}</mark>{text.slice(match.start + match.length)}</>;
+}
+
+function PlaceContext({ place, query }: { place: KnownPlace; query: string }) {
+  const parts = [place.parent_name, place.district_name, place.city_name].filter((part): part is string => Boolean(part));
+  if (parts.length === 0) return null;
+  return (
+    <small className="lpCtx">
+      {parts.map((part, index) => (
+        <span key={`${part}-${index}`}><HighlightMatch text={part} query={query} />{index < parts.length - 1 ? " — " : ""}</span>
+      ))}
+    </small>
+  );
 }
 
 export default function MapPicker({ label, color, value, address, autoLocate, onChange, onPlaceSelect }: Props) {
@@ -166,6 +185,7 @@ function MapPanel({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ name: string; loc: LatLng }[]>([]);
   const [localPlaces, setLocalPlaces] = useState<KnownPlace[]>([]);
+  const [localSearching, setLocalSearching] = useState(false);
   const [coordPick, setCoordPick] = useState<LatLng | null>(null);
   const [searching, setSearching] = useState(false);
 
@@ -249,12 +269,16 @@ function MapPanel({
   // تلميحات الأماكن المعروفة أثناء الكتابة — بحث عربي متسامح (يظهر من أول حرف)
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 1 || parseCoordsInput(q)) { setLocalPlaces([]); return; }
+    if (q.length < 1 || parseCoordsInput(q)) { setLocalPlaces([]); setLocalSearching(false); return; }
+    let cancelled = false;
+    setLocalSearching(true);
     const t = setTimeout(async () => {
-      const { data } = await supabase.rpc("search_places", { p_query: q });
-      setLocalPlaces((data as KnownPlace[]) || []);
-    }, 200);
-    return () => clearTimeout(t);
+      const { data, error } = await supabase.rpc("search_places", { p_query: q });
+      if (cancelled) return;
+      setLocalPlaces(error ? [] : ((data as KnownPlace[]) || []));
+      setLocalSearching(false);
+    }, 150);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [query]);
 
   // البحث عبر Nominatim
@@ -336,16 +360,16 @@ function MapPanel({
       )}
       {localPlaces.length > 0 && (
         <ul className="searchResults localPlaces">
+          <li className="localResultsHead" aria-hidden="true">نتائج من بيانات التطبيق</li>
           {localPlaces.map((p) => (
             <li key={p.id} onClick={() => pickKnown(p)}>
-              <span className="lpName">{p.name}</span>
-              {(p.parent_name || p.district_name || p.city_name) && (
-                <small className="lpCtx">{[p.parent_name, p.district_name, p.city_name].filter(Boolean).join(" — ")}</small>
-              )}
+              <span className="lpName"><HighlightMatch text={p.name} query={query} /></span>
+              <PlaceContext place={p} query={query} />
             </li>
           ))}
         </ul>
       )}
+      {localSearching && <p className="localSearchStatus" role="status">جارٍ البحث في الأماكن المحفوظة...</p>}
       {results.length > 0 && (
         <ul className="searchResults">
           {results.map((r, i) => (
