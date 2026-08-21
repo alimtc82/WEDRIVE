@@ -117,6 +117,11 @@ input,button{font-family:inherit}
 .metric{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .metric span{display:block;color:var(--muted);font-size:13px;margin-bottom:8px}
 .metric b{font-size:26px}
+.metricButton{font:inherit;color:var(--ink);text-align:right;cursor:pointer;width:100%}
+.metricButton:hover,.metricButton:focus-visible{border-color:var(--green);outline:none;transform:translateY(-1px)}
+.metricButton small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.onlineMetric{position:relative;overflow:hidden}
+.onlineMetric::after{content:"";position:absolute;inset-inline-end:14px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(31,191,143,.14)}
 .settingsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px}
 .settingsGrid label{font-size:13px;color:var(--muted);display:block}
 .settingsGrid input{width:100%;margin-top:6px;padding:11px;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px}
@@ -274,6 +279,50 @@ input,button{font-family:inherit}
 .dueCell{background:rgba(226,86,74,.1)!important}
 .dueCell b{color:var(--danger)}
 .settleBtn{width:100%;padding:10px;background:var(--green);color:#04241c;border:0;border-radius:9px;font-weight:700;cursor:pointer;font-size:14px}
+.viewAllOnline{display:block;width:max-content;margin:-8px 0 14px auto;padding:7px 13px;border:1px solid var(--green);border-radius:8px;background:transparent;color:var(--green);cursor:pointer;font-weight:700}
+
+/* دليل الكباتن المتصلين */
+.onlineDirectory{max-width:none}
+.onlineDirectoryHead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.onlineDirectoryHead h2{margin:8px 0 4px;font-size:24px}
+.onlineDirectoryHead p{margin:0;color:var(--muted);font-size:13px}
+.backLink{padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;cursor:pointer}
+.livePill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:20px;background:rgba(31,191,143,.12);color:var(--green);font-weight:800;font-size:12px;white-space:nowrap}
+.livePill i{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(31,191,143,.13)}
+.onlineSearch{display:flex;gap:8px;margin-bottom:18px}
+.onlineSearch input{flex:1;min-width:0;padding:12px 14px;background:var(--navy);border:1px solid var(--line);border-radius:10px;color:var(--ink);font:inherit}
+.onlineSearch input:focus{outline:none;border-color:var(--green)}
+.onlineSearch button{padding:11px 24px;border:0;border-radius:10px;background:var(--green);color:#04241c;font-weight:800;cursor:pointer}
+.onlineCaptainGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px}
+.onlineCaptainCard{position:relative;padding:16px;background:linear-gradient(145deg,var(--navy),var(--card));border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(5,18,32,.08)}
+.onlineCaptainCard::before{content:"";position:absolute;inset-block:18px;inset-inline-start:0;width:3px;border-radius:3px;background:var(--green)}
+.onlineCaptainTop{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.onlineCaptainAvatar{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;background:rgba(31,191,143,.15);color:var(--green);font-size:19px;font-weight:900}
+.onlineCaptainIdentity{min-width:0;flex:1}
+.onlineCaptainIdentity h3{margin:0 0 3px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.onlineCaptainIdentity p{margin:0;color:var(--muted);font-size:12px;direction:ltr;text-align:right}
+.onlineCaptainVehicle{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;padding:10px 12px;margin-bottom:10px;background:rgba(255,255,255,.03);border-radius:9px;font-size:12px}
+.onlineCaptainVehicle span{color:var(--muted)}
+.onlineCaptainVehicle b{font-size:12px}
+.onlineCaptainStats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.onlineCaptainStats div{padding:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;text-align:center}
+.onlineCaptainStats span{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}
+.onlineCaptainStats b{font-size:12px}
+.captainContactActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.captainContactActions a{display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:9px;text-decoration:none;font-size:13px;font-weight:800}
+.callCaptain{background:var(--green);color:#04241c}
+.whatsappCaptain{background:#25d366;color:#062b16}
+.onlinePagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:20px}
+.onlinePagination span{color:var(--muted);font-size:13px}
+.onlinePagination button{padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:var(--navy);color:var(--ink);cursor:pointer}
+.onlinePagination button:disabled{opacity:.45;cursor:not-allowed}
+
+@media (max-width:600px){
+  .onlineDirectoryHead{align-items:center}
+  .onlineDirectoryHead h2{font-size:20px}
+  .onlineSearch button{padding-inline:16px}
+  .onlineCaptainGrid{grid-template-columns:1fr}
+}
 
 /* ===== Lightbox عرض المستندات ===== */
 .docThumb{border:0;background:transparent;padding:0;cursor:pointer;display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;text-align:center;font-family:inherit}
