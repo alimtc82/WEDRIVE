@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
+import "../legalRecords.css";
 
 type Row = {
   id: number;
@@ -75,16 +76,7 @@ export default function AdminLegalRecords() {
     if (!w) { setErr("اسمح بالنوافذ المنبثقة لطباعة الإثبات"); return; }
     const roleLabel = d.role === "captain" ? "كابتن" : "عميل";
     const policy = esc(d.policy_text || "").replace(/\n/g, "<br>");
-    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إثبات موافقة ${esc(d.full_name || d.user_id)}</title><style>
-      body{font-family:Arial,Tahoma,sans-serif;color:#111827;margin:32px;line-height:1.8}h1{font-size:24px;margin:0 0 6px}h2{font-size:18px;margin-top:28px}table{width:100%;border-collapse:collapse;margin:20px 0}td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.note{padding:12px;border:1px solid #93c5fd;background:#eff6ff;border-radius:8px}.policy{white-space:normal;font-size:13px;border-top:2px solid #111827;padding-top:18px}.hash{direction:ltr;text-align:left;word-break:break-all;font-family:monospace;font-size:11px}@media print{button{display:none}}
-    </style></head><body><h1>إثبات موافقة إلكترونية على سياسات الاستخدام</h1><div>كابتن بنها</div><table>
-      <tr><td>الاسم</td><td>${esc(d.full_name || "—")}</td></tr><tr><td>نوع الحساب</td><td>${roleLabel}</td></tr>
-      <tr><td>البريد</td><td>${esc(d.email || "—")}</td></tr><tr><td>الهاتف</td><td>${esc(d.phone || "—")}</td></tr>
-      <tr><td>User ID</td><td class="hash">${esc(d.user_id)}</td></tr><tr><td>إصدار السياسة</td><td>${esc(d.terms_version)}</td></tr>
-      <tr><td>وقت الموافقة</td><td>${esc(fmt(d.accepted_at))}</td></tr><tr><td>وقت إنشاء الحساب</td><td>${esc(fmt(d.signup_created_at))}</td></tr>
-      <tr><td>بصمة النص SHA-256</td><td class="hash">${esc(d.policy_sha256 || "—")}</td></tr></table>
-      <p class="note"><b>حفظ حقوق المستخدم:</b> هذا السجل يثبت الموافقة الإلكترونية على النسخة الموضحة فقط، ولا يُعد تنازلاً عن أي حق إلزامي للعميل أو الكابتن أو إسقاطًا لأي مسؤولية لا يجوز قانونًا استبعادها.</p>
-      <h2>النص الذي تمت الموافقة عليه</h2><div class="policy">${policy}</div><script>setTimeout(()=>window.print(),300)</script></body></html>`);
+    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إثبات موافقة ${esc(d.full_name || d.user_id)}</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111827;margin:32px;line-height:1.8}h1{font-size:24px;margin:0 0 6px}h2{font-size:18px;margin-top:28px}table{width:100%;border-collapse:collapse;margin:20px 0}td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.note{padding:12px;border:1px solid #93c5fd;background:#eff6ff;border-radius:8px}.policy{font-size:13px;border-top:2px solid #111827;padding-top:18px}.hash{direction:ltr;text-align:left;word-break:break-all;font-family:monospace;font-size:11px}</style></head><body><h1>إثبات موافقة إلكترونية على سياسات الاستخدام</h1><div>كابتن بنها</div><table><tr><td>الاسم</td><td>${esc(d.full_name || "—")}</td></tr><tr><td>نوع الحساب</td><td>${roleLabel}</td></tr><tr><td>البريد</td><td>${esc(d.email || "—")}</td></tr><tr><td>الهاتف</td><td>${esc(d.phone || "—")}</td></tr><tr><td>User ID</td><td class="hash">${esc(d.user_id)}</td></tr><tr><td>إصدار السياسة</td><td>${esc(d.terms_version)}</td></tr><tr><td>وقت الموافقة</td><td>${esc(fmt(d.accepted_at))}</td></tr><tr><td>وقت إنشاء الحساب</td><td>${esc(fmt(d.signup_created_at))}</td></tr><tr><td>بصمة النص SHA-256</td><td class="hash">${esc(d.policy_sha256 || "—")}</td></tr></table><p class="note"><b>حفظ حقوق المستخدم:</b> هذا السجل يثبت الموافقة الإلكترونية على النسخة الموضحة فقط، ولا يُعد تنازلاً عن أي حق إلزامي للعميل أو الكابتن أو إسقاطًا لأي مسؤولية لا يجوز قانونًا استبعادها.</p><h2>النص الذي تمت الموافقة عليه</h2><div class="policy">${policy}</div><script>setTimeout(()=>window.print(),300)</script></body></html>`);
     w.document.close();
   };
 
@@ -92,44 +84,18 @@ export default function AdminLegalRecords() {
 
   return (
     <section className="panel">
-      <div className="panelHead">
-        <h2>السجلات القانونية</h2>
-        <p>سجل قراءة فقط لإثبات الموافقات الإلكترونية مع الاحتفاظ بالنص التاريخي الذي وافق عليه المستخدم.</p>
-      </div>
-      <div className="legalNotice">
-        <b>حفظ حقوق العميل والكابتن</b>
-        <span>السجل يثبت القبول ولا يسمح بتغيير نص الموافقة بأثر رجعي، ولا يسقط أي حق إلزامي مقرر قانونًا.</span>
-      </div>
+      <div className="panelHead"><h2>السجلات القانونية</h2><p>سجل قراءة فقط لإثبات الموافقات الإلكترونية مع الاحتفاظ بالنص التاريخي الذي وافق عليه المستخدم.</p></div>
+      <div className="legalNotice"><b>حفظ حقوق العميل والكابتن</b><span>السجل يثبت القبول ولا يسمح بتغيير نص الموافقة بأثر رجعي، ولا يسقط أي حق إلزامي مقرر قانونًا.</span></div>
       <div className="apFilters">
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="بحث بالاسم أو الهاتف أو البريد أو User ID" />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="">كل أنواع الحسابات</option><option value="customer">العملاء</option><option value="captain">الكباتن</option>
-        </select>
+        <select value={role} onChange={(e) => setRole(e.target.value)}><option value="">كل أنواع الحسابات</option><option value="customer">العملاء</option><option value="captain">الكباتن</option></select>
         <button className="wizBack" onClick={() => { setQuery(""); setRole(""); }}>مسح البحث</button>
       </div>
       {err && <p className="authError">{err}</p>}
-      {busy ? <p className="emptyState">جارٍ تحميل السجلات...</p> : (
-        <div className="apList">
-          {rows.map((r) => <div className="apRow" key={r.id}>
-            <div className="apRowMain"><b>{r.full_name || "بدون اسم"}</b><span className="apMeta">{r.role === "captain" ? "كابتن" : "عميل"} · {r.email || r.phone || r.user_id}<br/>وافق على {r.terms_version} — {fmt(r.accepted_at)}</span></div>
-            <div className="apRowActions"><button onClick={() => void openDetail(r.id)} disabled={detailBusy}>عرض الإثبات</button></div>
-          </div>)}
-          {!rows.length && <p className="emptyState">لا توجد موافقات مطابقة.</p>}
-        </div>
-      )}
+      {busy ? <p className="emptyState">جارٍ تحميل السجلات...</p> : <div className="apList">{rows.map((r) => <div className="apRow" key={r.id}><div className="apRowMain"><b>{r.full_name || "بدون اسم"}</b><span className="apMeta">{r.role === "captain" ? "كابتن" : "عميل"} · {r.email || r.phone || r.user_id}<br/>وافق على {r.terms_version} — {fmt(r.accepted_at)}</span></div><div className="apRowActions"><button onClick={() => void openDetail(r.id)} disabled={detailBusy}>عرض الإثبات</button></div></div>)}{!rows.length && <p className="emptyState">لا توجد موافقات مطابقة.</p>}</div>}
       <div className="apPager"><button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>السابق</button><span>{page} / {pages}</span><button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>التالي</button></div>
       <p className="apCount">إجمالي السجلات: {total}</p>
-
-      {detail && <div className="legalOverlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setDetail(null); }}>
-        <section className="legalModal" role="dialog" aria-modal="true" dir="rtl">
-          <header><div><small>إثبات موافقة رقم #{detail.id}</small><h3>{detail.full_name || detail.user_id}</h3></div><button onClick={() => setDetail(null)}>×</button></header>
-          <div className="legalMetaGrid"><div><span>نوع الحساب</span><b>{selectedRole}</b></div><div><span>إصدار السياسة</span><b>{detail.terms_version}</b></div><div><span>وقت الموافقة</span><b>{fmt(detail.accepted_at)}</b></div><div><span>إنشاء الحساب</span><b>{fmt(detail.signup_created_at)}</b></div><div><span>البريد</span><b>{detail.email || "—"}</b></div><div><span>الهاتف</span><b>{detail.phone || "—"}</b></div></div>
-          <div className="legalHash"><span>SHA-256 للنص</span><code>{detail.policy_sha256 || "—"}</code></div>
-          <p className="legalRights">هذا الإثبات لا ينتقص من الحقوق الإلزامية للمستخدم ولا يغير النص الذي وافق عليه وقت التسجيل.</p>
-          <div className="legalPolicyText">{detail.policy_text}</div>
-          <footer><button className="authSubmit" onClick={() => printProof(detail)}>طباعة / حفظ PDF</button><button className="wizBack" onClick={() => setDetail(null)}>إغلاق</button></footer>
-        </section>
-      </div>}
+      {detail && <div className="legalOverlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setDetail(null); }}><section className="legalModal" role="dialog" aria-modal="true" dir="rtl"><header><div><small>إثبات موافقة رقم #{detail.id}</small><h3>{detail.full_name || detail.user_id}</h3></div><button onClick={() => setDetail(null)}>×</button></header><div className="legalMetaGrid"><div><span>نوع الحساب</span><b>{selectedRole}</b></div><div><span>إصدار السياسة</span><b>{detail.terms_version}</b></div><div><span>وقت الموافقة</span><b>{fmt(detail.accepted_at)}</b></div><div><span>إنشاء الحساب</span><b>{fmt(detail.signup_created_at)}</b></div><div><span>البريد</span><b>{detail.email || "—"}</b></div><div><span>الهاتف</span><b>{detail.phone || "—"}</b></div></div><div className="legalHash"><span>SHA-256 للنص</span><code>{detail.policy_sha256 || "—"}</code></div><p className="legalRights">هذا الإثبات لا ينتقص من الحقوق الإلزامية للمستخدم ولا يغير النص الذي وافق عليه وقت التسجيل.</p><div className="legalPolicyText">{detail.policy_text}</div><footer><button className="authSubmit" onClick={() => printProof(detail)}>طباعة / حفظ PDF</button><button className="wizBack" onClick={() => setDetail(null)}>إغلاق</button></footer></section></div>}
     </section>
   );
 }
