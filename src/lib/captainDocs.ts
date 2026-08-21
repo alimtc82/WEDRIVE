@@ -49,3 +49,21 @@ export async function signedDocUrl(path: string): Promise<string | null> {
   if (error) return null;
   return data.signedUrl;
 }
+
+// يستعيد مسارات المستندات الموجودة فعليًا عند انقطاع التسجيل قبل حفظها في جدول captains.
+export async function listCaptainDocPaths(userId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase.storage.from("captain-docs").list(userId, {
+    limit: 20,
+    sortBy: { column: "name", order: "asc" },
+  });
+  if (error) throw error;
+
+  return Object.fromEntries(
+    (data || [])
+      .filter((file) => file.id)
+      .map((file) => {
+        const slot = file.name.replace(/\.(?:jpe?g|png|webp)$/i, "");
+        return [slot, `${userId}/${file.name}`];
+      })
+  );
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { signedDocUrl, deleteCaptainDocs } from "../lib/captainDocs";
+import { signedDocUrl, deleteCaptainDocs, listCaptainDocPaths } from "../lib/captainDocs";
 
 interface CaptainRow {
   id: string; full_name: string; phone: string; email: string;
@@ -12,6 +12,12 @@ interface CaptainRow {
   terms_accepted_at: string; reject_reason: string | null;
   rating_avg: number; trips_count: number;
 }
+
+const DOC_FIELDS = [
+  "id_card_front", "id_card_back", "vehicle_license_front", "vehicle_license_back",
+  "driver_license_front", "driver_license_back", "selfie_photo", "car_front_photo",
+  "car_back_photo", "plate_photo",
+] as const satisfies readonly (keyof CaptainRow)[];
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض", suspended: "موقوف",
@@ -28,7 +34,20 @@ export default function AdminCaptains() {
     const { data } = await supabase.rpc("admin_list_captains", {
       p_status: filter === "all" ? null : filter,
     });
-    setRows((data as CaptainRow[]) || []);
+    const captains = (data as CaptainRow[]) || [];
+    const hydrated = await Promise.all(captains.map(async (captain) => {
+      if (!DOC_FIELDS.some((field) => !captain[field])) return captain;
+      try {
+        const stored = await listCaptainDocPaths(captain.id);
+        return DOC_FIELDS.reduce((row, field) => ({
+          ...row,
+          [field]: row[field] || stored[field] || "",
+        }), captain);
+      } catch {
+        return captain;
+      }
+    }));
+    setRows(hydrated);
     setLoading(false);
   }, [filter]);
 
@@ -116,6 +135,7 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
     { label: "السيارة - خلف", path: row.car_back_photo },
     { label: "اللوحة المعدنية", path: row.plate_photo },
   ].filter((d) => d.path);
+  const missingDocs = DOC_FIELDS.length - docs.length;
   const expiries = [
     { label: "انتهاء البطاقة", date: row.id_card_expiry },
     { label: "انتهاء رخصة السيارة", date: row.vehicle_license_expiry },
@@ -150,6 +170,11 @@ function CaptainDetail({ row, onClose, onReview, onRemove }: {
         </div>
 
         {docs.length === 0 && <p className="emptyState">لا توجد مستندات مرفوعة لهذا الكابتن</p>}
+        {docs.length > 0 && missingDocs > 0 && (
+          <p className="authError" role="status">
+            تم العثور على {docs.length} مستندات فقط من أصل {DOC_FIELDS.length} — يجب على الكابتن استكمال {missingDocs} مستندات.
+          </p>
+        )}
         <div className="docsGrid">
           {docs.map((d, i) => <DocThumb key={i} label={d.label} path={d.path} onOpen={() => setLightbox(i)} />)}
         </div>
