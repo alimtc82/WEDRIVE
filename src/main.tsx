@@ -5,6 +5,7 @@ import RoleRouter from "./RoleRouter";
 import "./styles.css";
 import "./stops.css";
 import "./places.css";
+import "./blueTheme.css";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
