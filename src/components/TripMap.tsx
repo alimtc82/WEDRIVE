@@ -21,10 +21,9 @@ const STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-// ألوان المسار التقدّمي
-const DONE_COLOR = "#9aa3c0";   // الجزء المقطوع (باهت)
-const NEXT_PICKUP = "#3b82f6";  // المتبقي: الكابتن في الطريق للعميل
-const NEXT_TRIP = "#1fbf8f";    // المتبقي: الرحلة الجارية
+const DONE_COLOR = "#9aa3c0";
+const NEXT_PICKUP = "#3b82f6";
+const NEXT_TRIP = "#1fbf8f";
 
 function pinEl(kind: "captain" | "from" | "to" | "stop"): HTMLDivElement {
   const el = document.createElement("div");
@@ -41,7 +40,6 @@ function lineFeature(coords: Coord[]) {
   return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } };
 }
 
-// أقرب نقطة على هندسة المسار لموقع الكابتن الحالي
 function nearestIndex(route: Coord[], pos: Coord): number {
   let best = 0, bd = Infinity;
   for (let i = 0; i < route.length; i++) {
@@ -58,11 +56,11 @@ export default function TripMap({ tripId, status }: Props) {
   const markers = useRef<{ captain?: maplibregl.Marker; from?: maplibregl.Marker; to?: maplibregl.Marker; stops: maplibregl.Marker[] }>({ stops: [] });
   const stopsRef = useRef<Stop[]>([]);
   const routeCache = useRef<Record<string, Coord[]>>({});
-  // نقطة بداية المسار لكل مرحلة — تُثبَّت عند أول قراءة حتى لا يتحرك "بداية المقطوع" مع الكابتن
   const anchors = useRef<Record<string, Coord>>({});
+  const fittedPhase = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [routeError, setRouteError] = useState(false);
 
-  // قبل بدء الرحلة: المسار كابتن → نقطة العميل. بعد البدء: انطلاق ← توقفات ← وجهة
   const beforeStart = status === "accepted" || status === "arrived";
   const phase = beforeStart ? "pickup" : "trip";
 
@@ -75,13 +73,14 @@ export default function TripMap({ tripId, status }: Props) {
     if (src) src.setData(data as GeoJSON);
     else {
       map.addSource(id, { type: "geojson", data: data as GeoJSON });
-      map.addLayer({ id, type: "line", source: id,
+      map.addLayer({
+        id, type: "line", source: id,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": color, "line-width": width, "line-opacity": 0.9 } });
+        paint: { "line-color": color, "line-width": width, "line-opacity": 0.9 },
+      });
     }
   }, []);
 
-  // يرسم المسار مقسومًا: مقطوع (باهت) + متبقٍ (ملوّن) حسب موقع الكابتن
   const paintProgress = useCallback((route: Coord[], cap: Coord | null) => {
     const nextColor = beforeStart ? NEXT_PICKUP : NEXT_TRIP;
     if (!cap || route.length < 2) {
@@ -94,31 +93,53 @@ export default function TripMap({ tripId, status }: Props) {
     setLine("routeNext", [cap, ...route.slice(i + 1)], nextColor, 5);
   }, [beforeStart, setLine]);
 
+  const focusRoute = useCallback((route: Coord[], cap: Coord | null) => {
+    const map = mapRef.current;
+    if (!map || route.length < 2 || fittedPhase.current === phase) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    route.forEach((p) => bounds.extend(p));
+    if (cap) bounds.extend(cap);
+
+    map.fitBounds(bounds, {
+      padding: { top: 48, right: 42, bottom: 48, left: 42 },
+      maxZoom: 15.5,
+      duration: 700,
+    });
+    fittedPhase.current = phase;
+  }, [phase]);
+
   const drawRoute = useCallback(async (d: MapData) => {
     const from: Coord = [d.pickup.lng, d.pickup.lat];
     const to: Coord = [d.dropoff.lng, d.dropoff.lat];
     const cap: Coord | null = d.captain ? [d.captain.lng, d.captain.lat] : null;
 
-    let anchor: Coord, waypoints: Coord[];
+    let waypoints: Coord[];
     if (beforeStart) {
-      if (!cap) return; // لا موقع للكابتن بعد
-      if (!anchors.current.pickup) anchors.current.pickup = cap; // تثبيت البداية لحظة القبول
-      anchor = anchors.current.pickup;
-      waypoints = [anchor, from];
+      if (!cap) return;
+      if (!anchors.current.pickup) anchors.current.pickup = cap;
+      waypoints = [anchors.current.pickup, from];
     } else {
-      anchor = from;
-      // المسار يمر بكل نقاط التوقف بالترتيب قبل الوجهة النهائية
       const stopCoords: Coord[] = stopsRef.current.map((s) => [s.lng, s.lat]);
-      waypoints = [anchor, ...stopCoords, to];
+      waypoints = [from, ...stopCoords, to];
     }
 
-    let route = routeCache.current[phase];
-    if (!route) {
-      route = await fetchRoute(waypoints);
-      routeCache.current[phase] = route;
+    try {
+      let route = routeCache.current[phase];
+      if (!route) {
+        route = await fetchRoute(waypoints);
+        routeCache.current[phase] = route;
+      }
+      setRouteError(false);
+      paintProgress(route, cap);
+      focusRoute(route, cap);
+    } catch {
+      // لا نعرض خطوطًا مستقيمة وهمية. نترك الخريطة بعلاماتها فقط ونعاود المحاولة مع التحديث التالي.
+      setRouteError(true);
+      setLine("routeDone", [], DONE_COLOR, 6);
+      setLine("routeNext", [], beforeStart ? NEXT_PICKUP : NEXT_TRIP, 5);
     }
-    paintProgress(route, cap);
-  }, [beforeStart, phase, paintProgress]);
+  }, [beforeStart, phase, paintProgress, focusRoute, setLine]);
 
   const update = useCallback((d: MapData) => {
     const map = mapRef.current; if (!map) return;
@@ -128,7 +149,6 @@ export default function TripMap({ tripId, status }: Props) {
     if (!markers.current.from) markers.current.from = new maplibregl.Marker({ element: pinEl("from") }).setLngLat(from).addTo(map);
     if (!markers.current.to) markers.current.to = new maplibregl.Marker({ element: pinEl("to") }).setLngLat(to).addTo(map);
 
-    // علامات نقاط التوقف (أصفر)
     const st = stopsRef.current;
     while (markers.current.stops.length < st.length) {
       markers.current.stops.push(new maplibregl.Marker({ element: pinEl("stop") }));
@@ -148,14 +168,11 @@ export default function TripMap({ tripId, status }: Props) {
         const img = markers.current.captain.getElement().querySelector("img") as HTMLImageElement | null;
         if (img) img.style.transform = `rotate(${cap.heading}deg)`;
       }
-
-      const b = new maplibregl.LngLatBounds();
-      b.extend(pos); b.extend(beforeStart ? from : to);
-      map.fitBounds(b, { padding: 60, maxZoom: 15, duration: 500 });
     }
 
-    drawRoute(d);
-  }, [beforeStart, drawRoute]);
+    // لا نعمل fitBounds مع كل تحديث GPS؛ الفوكس يتم على هندسة المسار الحقيقي مرة لكل مرحلة.
+    void drawRoute(d);
+  }, [drawRoute]);
 
   const load = useCallback(async () => {
     const [mapRes, tripRes] = await Promise.all([
@@ -173,10 +190,9 @@ export default function TripMap({ tripId, status }: Props) {
     const map = new maplibregl.Map({ container: containerRef.current, style: STYLE, center: [31.2357, 30.0444], zoom: 11 });
     mapRef.current = map;
     map.on("load", () => { map.resize(); setReady(true); load(); });
-    setTimeout(() => map.resize(), 300);
+    const resizeTimer = window.setTimeout(() => map.resize(), 300);
 
-    // تحديث دوري + realtime على مواقع الكباتن والرحلة
-    const interval = setInterval(load, 15000);
+    const interval = window.setInterval(load, 15000);
     const ch = supabase.channel("trip-map-" + tripId)
       .on("postgres_changes", { event: "*", schema: "public", table: "captains" }, () => load())
       .on("postgres_changes", {
@@ -184,10 +200,31 @@ export default function TripMap({ tripId, status }: Props) {
       }, () => load())
       .subscribe();
 
-    return () => { clearInterval(interval); supabase.removeChannel(ch); map.remove(); mapRef.current = null; markers.current = { stops: [] }; };
+    return () => {
+      window.clearTimeout(resizeTimer);
+      window.clearInterval(interval);
+      supabase.removeChannel(ch);
+      map.remove();
+      mapRef.current = null;
+      markers.current = { stops: [] };
+    };
   }, [tripId, load]);
 
-  useEffect(() => { if (ready) load(); }, [status, ready, load]);
+  useEffect(() => {
+    if (!ready) return;
+    fittedPhase.current = null;
+    delete routeCache.current[phase];
+    void load();
+  }, [status, phase, ready, load]);
 
-  return <div ref={containerRef} className="tripMapCanvas" />;
+  return (
+    <div>
+      <div ref={containerRef} className="tripMapCanvas" />
+      {routeError && (
+        <p className="locWarn" role="status" style={{ marginTop: 8 }}>
+          تعذّر تحميل مسار الطريق مؤقتًا — جارٍ إعادة المحاولة تلقائيًا
+        </p>
+      )}
+    </div>
+  );
 }
