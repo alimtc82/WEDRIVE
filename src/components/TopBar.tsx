@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 import { BrandMark } from "../lib/brand";
 
+const APP_VERSION = "1.16.6";
+
 const roleLabel: Record<string, string> = {
   customer: "عميل",
   captain: "كابتن",
@@ -31,7 +33,7 @@ export default function TopBar({ title }: { title: string }) {
     <header className="topbar">
       <div className="topbarBrand">
         <BrandMark size={30} />
-        <b>{title}</b>
+        <b>{title} {APP_VERSION}</b>
       </div>
       <div className="topbarUser">
         <button className="themeToggle" onClick={toggleTheme}
