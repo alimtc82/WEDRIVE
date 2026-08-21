@@ -4,7 +4,7 @@ import { useAuth } from "../lib/AuthContext";
 import type { Settings, TripKind } from "../lib/types";
 import { haversineKm, guessKind, type LatLng } from "../lib/geo";
 import TopBar from "../components/TopBar";
-import MapPicker from "../components/MapPicker";
+import MapPicker, { RouteMapPicker } from "../components/MapPicker";
 import ActiveTrip from "../components/ActiveTrip";
 import CustomerOffers from "./CustomerOffers";
 import MyTrips from "../pages/MyTrips";
@@ -220,9 +220,13 @@ export default function CustomerApp() {
                   </div>
                 )}
 
-                <MapPicker label="من" color="green" value={pickup} address={pickupAddr} autoLocate
-                  onChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); setPickedRouteId(null); }}
-                  onPlaceSelect={setPickupPlaceId} />
+                <RouteMapPicker key={pickedRouteId || (pickup || dropoff ? "manual" : "empty")}
+                  pickup={pickup} pickupAddress={pickupAddr}
+                  dropoff={dropoff} dropoffAddress={dropoffAddr}
+                  onPickupChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); setPickedRouteId(null); }}
+                  onDropoffChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); setPickedRouteId(null); }}
+                  onPickupPlaceSelect={setPickupPlaceId}
+                  onDropoffPlaceSelect={setDropoffPlaceId} />
 
                 {/* نقاط التوقف الاختيارية (حتى 3) */}
                 {stops.map((s, i) => (
@@ -241,10 +245,6 @@ export default function CustomerApp() {
                     ＋ إضافة نقطة توقف ({stops.length}/{MAX_STOPS})
                   </button>
                 )}
-
-                <MapPicker label="إلى" color="red" value={dropoff} address={dropoffAddr}
-                  onChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); setPickedRouteId(null); }}
-                  onPlaceSelect={setDropoffPlaceId} />
 
                 <div className="field">
                   <label>نوع الرحلة</label>
