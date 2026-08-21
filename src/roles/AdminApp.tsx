@@ -9,6 +9,7 @@ import AdminRatings from "./AdminRatings";
 import AdminPlaces from "./AdminPlaces";
 import AdminOnlineCaptains from "./AdminOnlineCaptains";
 import AdminSimulation from "./AdminSimulation";
+import AdminParentPlaceBridge from "./AdminParentPlaceBridge";
 
 type Tab = "overview" | "map" | "captains" | "online" | "ratings" | "pricing" | "places" | "simulation";
 
@@ -62,7 +63,7 @@ export default function AdminApp() {
         {tab === "overview" && <AdminOverview onOpenOnline={() => setTab("online")} />}
         {tab === "map" && <AdminMap />}
         {tab === "ratings" && <AdminRatings />}
-        {tab === "places" && <AdminPlaces />}
+        {tab === "places" && <><AdminPlaces /><AdminParentPlaceBridge active /></>}
         {tab === "online" && <AdminOnlineCaptains onBack={() => setTab("overview")} />}
         {tab === "captains" && <AdminCaptains />}
         {tab === "simulation" && <AdminSimulation />}
