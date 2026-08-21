@@ -1,0 +1,237 @@
+/* WEDRIVE blue design system — v1.16.8
+   Primary blue is used for actions/navigation. Green is reserved for semantic success/online states. */
+
+:root,
+html[data-theme="dark"]{
+  --navy:#0b1220;
+  --navy2:#111c31;
+  --card:#14233b;
+  --line:#314767;
+  --ink:#f8fafc;
+  --muted:#b7c4d8;
+  --green:#3b82f6;
+  --green-d:#2563eb;
+  --accent:#60a5fa;
+  --danger:#f87171;
+  --success:#22c55e;
+  --warning:#f59e0b;
+  --radius:14px;
+}
+
+html[data-theme="light"]{
+  --navy:#f3f7fd;
+  --navy2:#ffffff;
+  --card:#ffffff;
+  --line:#c7d5e9;
+  --ink:#0f172a;
+  --muted:#52627d;
+  --green:#2563eb;
+  --green-d:#1d4ed8;
+  --accent:#60a5fa;
+  --danger:#dc3f3f;
+  --success:#16a34a;
+  --warning:#b77900;
+}
+
+body{
+  background:
+    radial-gradient(900px 420px at 92% -8%,rgba(96,165,250,.20),transparent 62%),
+    radial-gradient(760px 420px at 4% 105%,rgba(37,99,235,.10),transparent 66%),
+    var(--navy);
+  color:var(--ink);
+  line-height:1.55;
+}
+
+html[data-theme="dark"] body{
+  background:
+    radial-gradient(850px 460px at 85% -10%,rgba(37,99,235,.20),transparent 65%),
+    radial-gradient(700px 460px at 0% 105%,rgba(96,165,250,.08),transparent 65%),
+    var(--navy);
+}
+
+/* Surfaces and hierarchy */
+.topbar{
+  background:color-mix(in srgb,var(--navy2) 94%,transparent);
+  border-bottom-color:var(--line);
+  box-shadow:0 8px 28px rgba(15,23,42,.06);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.panel,.metric,.inactiveCard,.modalCard{
+  border-color:var(--line);
+  box-shadow:0 12px 34px rgba(15,23,42,.07);
+}
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .metric,
+html[data-theme="dark"] .inactiveCard,
+html[data-theme="dark"] .modalCard{
+  box-shadow:0 14px 40px rgba(0,0,0,.22);
+}
+
+/* Stronger readable typography */
+.panelHead h2,.onlineRow h2,.offerWaitHead h2,.tripPartyInfo b,.custName,.uMeta b,
+.avFormHead h2,.avRole b,.avBrandMini b{color:var(--ink);font-weight:800}
+.panelHead p,.onlineRow p,.uMeta span,.custStats,.chip,.mapHint,.mapTip,.offerWaitSub,
+.offerCapMeta,.offerCapVeh,.tripPartyInfo span,.settingsGrid label,.field label,
+.mapPicker>label,.pickerField span,.routePickerStage>p,.routePickerSummary small,
+.verTag{color:var(--muted);opacity:1;font-weight:550}
+.verTag{font-size:13px;font-weight:700}
+
+/* Inputs / controls: stronger contrast and focus */
+input,select,textarea,.pickerField,.routePickerSummary button{
+  border-color:var(--line)!important;
+}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--muted) 82%,transparent)!important;opacity:1}
+input:focus,select:focus,textarea:focus,.pickerField:focus-visible,.routePickerSummary button:focus-visible{
+  outline:none!important;
+  border-color:var(--green)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)!important;
+}
+button:focus-visible,a:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--accent) 50%,transparent);
+  outline-offset:2px;
+}
+
+/* Primary actions */
+.cta,.acceptBtn,.offerMain,.offerAccept,.searchBtn,.pickerDone,.onlineSearch button,
+.approveBtn,.settleBtn,.authSubmit{
+  background:linear-gradient(135deg,#2563eb,#3b82f6)!important;
+  color:#fff!important;
+  box-shadow:0 9px 22px rgba(37,99,235,.22);
+}
+.cta:hover,.acceptBtn:hover,.offerMain:hover,.offerAccept:hover,.searchBtn:hover,.pickerDone:hover{
+  filter:brightness(1.04);
+}
+.cta:disabled,.acceptBtn:disabled,.offerAccept:disabled{opacity:.55;box-shadow:none}
+.segmented button.on,.adminTabs button.on,.capFilter button.on{
+  border-color:var(--green)!important;
+  color:var(--green)!important;
+  background:color-mix(in srgb,var(--green) 10%,var(--card))!important;
+  font-weight:800;
+}
+
+/* Semantic success remains green */
+.onlineToggle.isOn,.livePill,.locOk,.capBadge.approved,.capState.ready{color:var(--success)!important}
+.onlineToggle.isOn{border-color:var(--success)!important}
+.onlineToggle.isOn i,.livePill i,.onlineMetric::after{background:var(--success)!important}
+.onlineToggle.isOn i{box-shadow:0 0 0 4px color-mix(in srgb,var(--success) 18%,transparent)!important}
+.livePill{background:color-mix(in srgb,var(--success) 11%,transparent)!important}
+.dotFrom,.tripDot.from{background:var(--success)!important}
+.tripCall{background:color-mix(in srgb,var(--success) 15%,transparent)!important}
+.okMsg{color:var(--success)!important;background:color-mix(in srgb,var(--success) 10%,transparent)!important;font-weight:700}
+.locWarn,.docWarn,.capBadge.pending,.capState.busy{color:var(--warning)!important}
+
+/* Route and progress stay blue */
+.tripStatusLabel,.offerPrice,.custPrice b,.fareBox b,.backLink,.viewAllOnline{color:var(--green)!important}
+.tripStep.on,.wizBar span.on,.splashFill{background:var(--green)!important}
+.routeBanner{background:color-mix(in srgb,var(--green) 10%,transparent)!important;border-color:var(--green)!important}
+.routeEditBtn,.offerPlus{border-color:var(--green)!important;color:var(--green)!important}
+
+/* Readable cards */
+.reqCard,.offerCard,.tripParty,.capRow,.capFinCard,.docGroup,.termsBox,
+.fareBox,.pickerMap,.routePickerSummary button{
+  background:color-mix(in srgb,var(--navy) 78%,var(--card));
+}
+html[data-theme="light"] .reqCard,
+html[data-theme="light"] .offerCard,
+html[data-theme="light"] .tripParty,
+html[data-theme="light"] .capRow,
+html[data-theme="light"] .capFinCard,
+html[data-theme="light"] .docGroup,
+html[data-theme="light"] .termsBox,
+html[data-theme="light"] .fareBox,
+html[data-theme="light"] .pickerMap,
+html[data-theme="light"] .routePickerSummary button{
+  background:#f8fbff;
+}
+
+/* Auth screen — same blue system with guaranteed contrast */
+.avWrap{
+  background:
+    radial-gradient(520px 380px at 78% 4%,rgba(96,165,250,.26),transparent 66%),
+    radial-gradient(520px 420px at 6% 98%,rgba(37,99,235,.12),transparent 68%),
+    var(--navy)!important;
+  color:var(--ink);
+}
+.avGlow.g1{background:#60a5fa!important;opacity:.22!important}
+.avGlow.g2{background:#2563eb!important;opacity:.16!important}
+.avName{color:var(--ink)!important}
+.avName span{color:var(--green)!important}
+.avTag{color:var(--muted)!important;font-weight:650}
+.avChips span{
+  color:var(--green)!important;
+  background:color-mix(in srgb,var(--green) 8%,transparent)!important;
+  border-color:color-mix(in srgb,var(--green) 28%,transparent)!important;
+  font-weight:750;
+}
+.avRoute path{stroke:var(--green)!important}
+.avRoute circle{filter:saturate(1.1)}
+.avSheet{
+  background:color-mix(in srgb,var(--card) 96%,transparent)!important;
+  border-color:var(--line)!important;
+  box-shadow:0 18px 48px rgba(15,23,42,.14)!important;
+}
+html[data-theme="dark"] .avSheet{box-shadow:0 22px 54px rgba(0,0,0,.30)!important}
+.avGrab{background:color-mix(in srgb,var(--muted) 45%,transparent)!important}
+.avRole{
+  background:color-mix(in srgb,var(--navy) 76%,var(--card))!important;
+  border-color:var(--line)!important;
+  color:var(--ink)!important;
+}
+html[data-theme="light"] .avRole{background:#f8fbff!important}
+.avRole:hover{border-color:var(--green)!important}
+.avRole small,.avChev,.avDivider,.avSwitch,.avFormHead p,.avRemember{color:var(--muted)!important;font-weight:600}
+.avRole.customer .avRoleIc,.avRole.captain .avRoleIc{background:color-mix(in srgb,var(--green) 11%,transparent)!important}
+.avBtnNew,.avSubmit{
+  background:linear-gradient(135deg,#2563eb,#3b82f6)!important;
+  color:#fff!important;
+  box-shadow:0 12px 28px rgba(37,99,235,.26)!important;
+}
+.avSwitch button{color:var(--green)!important}
+.avBack{
+  background:var(--card)!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+.avField input{
+  background:color-mix(in srgb,var(--navy) 76%,var(--card))!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+html[data-theme="light"] .avField input{background:#f8fbff!important}
+.avField input:focus{border-color:var(--green)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 13%,transparent)!important}
+.avField input::placeholder{color:var(--muted)!important;opacity:.92}
+.avField>i,.avField .pwEye{opacity:.82!important;color:var(--muted)!important}
+.avRemember input{accent-color:var(--green)!important}
+.avDivider::before,.avDivider::after{background:var(--line)!important}
+.avBrandMini b{color:var(--ink)!important}
+
+/* Light theme auth card must never remain dark */
+html[data-theme="light"] .avSheet{
+  background:rgba(255,255,255,.96)!important;
+  color:#0f172a!important;
+}
+html[data-theme="light"] .avFormHead h2,
+html[data-theme="light"] .avRole b,
+html[data-theme="light"] .avBrandMini b{color:#0f172a!important}
+
+/* Dark theme: lift secondary text above WCAG-like comfortable contrast */
+html[data-theme="dark"] .avRole small,
+html[data-theme="dark"] .avSwitch,
+html[data-theme="dark"] .avRemember,
+html[data-theme="dark"] .panelHead p,
+html[data-theme="dark"] .uMeta span,
+html[data-theme="dark"] .chip{color:#c1cee0!important}
+
+/* Bigger touch targets and text clarity on phones */
+@media(max-width:600px){
+  button{min-height:42px}
+  .cta,.acceptBtn,.offerAccept,.avSubmit,.avBtnNew{min-height:50px}
+  .panelHead h2{font-size:20px}
+  .panelHead p{font-size:13.5px;line-height:1.7}
+  .avName{font-size:36px!important}
+  .avTag{font-size:14.5px!important}
+  .avRole b{font-size:17px!important}
+  .avRole small{font-size:13px!important;line-height:1.6}
+  .avField input{min-height:54px;font-size:16px!important}
+}
