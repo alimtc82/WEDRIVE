@@ -9,29 +9,15 @@ const ROUTERS = [
   "https://routing.openstreetmap.de/routed-car/route/v1/driving/",
 ];
 
-async function requestRoute(url: string): Promise<Coord[] | null> {
+async function requestNativeRoute(url: string): Promise<Coord[] | null> {
   try {
-    let data: any;
-    if (Capacitor.isNativePlatform()) {
-      const res = await CapacitorHttp.get({
-        url,
-        connectTimeout: 7000,
-        readTimeout: 7000,
-      });
-      if (res.status < 200 || res.status >= 300) return null;
-      data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-    } else {
-      const ctrl = new AbortController();
-      const timer = window.setTimeout(() => ctrl.abort(), 7000);
-      try {
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) return null;
-        data = await res.json();
-      } finally {
-        window.clearTimeout(timer);
-      }
-    }
-
+    const res = await CapacitorHttp.get({
+      url,
+      connectTimeout: 7000,
+      readTimeout: 7000,
+    });
+    if (res.status < 200 || res.status >= 300) return null;
+    const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
     const coords = data?.routes?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coords) || coords.length < 2) return null;
     return coords as Coord[];
@@ -40,14 +26,44 @@ async function requestRoute(url: string): Promise<Coord[] | null> {
   }
 }
 
+async function requestWebRoute(points: Coord[]): Promise<Coord[] | null> {
+  try {
+    const qs = encodeURIComponent(points.map((p) => `${p[0]},${p[1]}`).join(";"));
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 10_000);
+    try {
+      // Same-origin Vercel function: avoids browser CORS/provider differences.
+      const res = await fetch(`/api/route?points=${qs}`, {
+        signal: ctrl.signal,
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const coords = data?.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) return null;
+      return coords as Coord[];
+    } finally {
+      window.clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchRoute(points: Coord[]): Promise<Coord[]> {
   if (points.length < 2) throw new Error("ROUTE_POINTS_MISSING");
 
+  if (!Capacitor.isNativePlatform()) {
+    const route = await requestWebRoute(points);
+    if (route) return route;
+    throw new Error("ROUTE_UNAVAILABLE");
+  }
+
   const path = points.map((p) => `${p[0]},${p[1]}`).join(";");
   const suffix = `${path}?overview=full&geometries=geojson&steps=false`;
-
   for (const base of ROUTERS) {
-    const route = await requestRoute(base + suffix);
+    const route = await requestNativeRoute(base + suffix);
     if (route) return route;
   }
 

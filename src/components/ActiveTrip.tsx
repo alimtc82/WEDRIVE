@@ -26,7 +26,6 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
   const [stops, setStops] = useState<TripStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  // التقييم يفتح دائمًا على 5 نجوم (أعلى تقييم) ويمكن تقليله بالضغط
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [err, setErr] = useState("");
@@ -37,7 +36,6 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
     setLoading(false);
   }, []);
 
-  // جلب نقاط التوقف للرحلة الحالية (تُقرأ مباشرة من جدول الرحلات)
   useEffect(() => {
     if (!trip?.id) { setStops([]); return; }
     supabase.from("trips").select("stops").eq("id", trip.id).single()
@@ -48,11 +46,29 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
   }, [trip?.id]);
 
   useEffect(() => {
-    load();
+    void load();
     const ch = supabase.channel("active-trip")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => { void load(); })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void load();
+      });
+
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void load();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    const timer = window.setInterval(refresh, 8_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      void supabase.removeChannel(ch);
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
   const act = async (fn: string) => {
@@ -61,7 +77,7 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
     const { error } = await supabase.rpc(fn, { p_trip_id: trip.id });
     setBusy(false);
     if (error) { setErr(error.message); return; }
-    load();
+    void load();
   };
 
   const cancel = async () => {
@@ -93,7 +109,6 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
 
   return (
     <section className="panel tripPanel">
-      {/* حالة الرحلة */}
       <div className="tripStatus">
         <span className="tripStatusLabel">{STATUS_STEPS[stepIndex]?.label || "رحلتك"}</span>
         <div className="tripSteps">
@@ -103,12 +118,10 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
-      {/* خريطة حية أثناء الرحلة (تختفي عند التقييم) */}
       {trip.status !== "completed" && (
         <TripMap tripId={trip.id} status={trip.status} />
       )}
 
-      {/* بيانات الطرف الآخر */}
       {other && (
         <div className="tripParty">
           <div className="tripAvatar">{(other.name || "؟").charAt(0)}</div>
@@ -125,7 +138,6 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {/* المسار والسعر — تشمل نقاط التوقف إن وُجدت */}
       <div className="tripRoute">
         <div className="rSeg"><i className="dotFrom" /><span>{trip.pickup_address}</span></div>
         {stops.map((s, i) => (
@@ -137,12 +149,11 @@ export default function ActiveTrip({ onDone }: { onDone: () => void }) {
       </div>
       <div className="fareBox">
         <div><span>المسافة{stops.length > 0 ? " (شاملة التوقفات)" : ""}</span><b className="distVal">{trip.distance_km} كم</b></div>
-        <div style={{ textAlign: "left" }}><span>الأجرة (نقدًا)</span><b>{Number(trip.price).toFixed(2)} ج.م</b></div>
+        <div style={{ textAlign: "left" }}><span>الأجرة (نقدًا)</span><b>{Number(trip.price).toFixed(0)} ج.م</b></div>
       </div>
 
       {err && <p className="authError">{err}</p>}
 
-      {/* أزرار حسب الدور والحالة */}
       {trip.status === "completed" ? (
         <div className="ratingArea">
           <h3>{trip.is_customer ? "قيّم الكابتن" : "قيّم العميل"}</h3>

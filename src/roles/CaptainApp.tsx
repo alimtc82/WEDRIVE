@@ -24,10 +24,13 @@ interface PendingTrip {
   customer_trips_count: number;
 }
 
+const presenceKey = (captainId: string) => `wedrive:captain-online:${captainId}`;
+
 export default function CaptainApp() {
   const { profile } = useAuth();
   const [tab, setTab] = useState<"home" | "trips" | "ratings">("home");
   const [online, setOnline] = useState(false);
+  const [presenceReady, setPresenceReady] = useState(false);
   const [trips, setTrips] = useState<PendingTrip[]>([]);
   const [pendingError, setPendingError] = useState("");
   const [note, setNote] = useState("");
@@ -35,7 +38,6 @@ export default function CaptainApp() {
   const [hasActive, setHasActive] = useState<boolean>(false);
   const [hasOffer, setHasOffer] = useState<boolean>(false);
   const [trackInterval, setTrackInterval] = useState<number>(30);
-  // modal تعديل السعر اليدوي
   const [priceModal, setPriceModal] = useState<{ open: boolean; tripId: string; defaultPrice: number; value: string }>({
     open: false, tripId: "", defaultPrice: 0, value: "",
   });
@@ -77,8 +79,7 @@ export default function CaptainApp() {
     setPendingError("");
   }, []);
 
-  // تتبّع الموقع طالما الكابتن متصل أو في رحلة
-  const locStatus = useLocationTracker(online || hasActive, trackInterval);
+  const locStatus = useLocationTracker((presenceReady && online) || hasActive, trackInterval);
 
   useEffect(() => {
     void checkActive();
@@ -89,22 +90,65 @@ export default function CaptainApp() {
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void checkActive();
       });
-    return () => { void supabase.removeChannel(ch); };
+
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void checkActive();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    const poll = window.setInterval(refresh, 8_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      void supabase.removeChannel(ch);
+      window.clearInterval(poll);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [checkActive]);
 
+  // استعادة نية الاتصال بعد Refresh للويب. لا نعتبر إعادة تحميل الصفحة ضغطًا على "غير متصل".
   useEffect(() => {
-    supabase.from("captains").select("status,reject_reason,is_online").eq("id", profile!.id).single()
-      .then(({ data }) => {
-        if (!data) return;
-        setCapStatus(data.status);
+    if (!profile?.id) return;
+    let cancelled = false;
+    const key = presenceKey(profile.id);
+
+    const restore = async () => {
+      const { data } = await supabase.from("captains")
+        .select("status,reject_reason,is_online")
+        .eq("id", profile.id)
+        .single();
+      if (cancelled || !data) return;
+
+      setCapStatus(data.status);
+      const remembered = window.localStorage.getItem(key) === "1";
+      const shouldRestore = data.status === "approved" && (remembered || Boolean(data.is_online));
+
+      if (shouldRestore) {
+        const { error } = await supabase.rpc("captain_presence_heartbeat", { p_online: true });
+        if (!cancelled && !error) {
+          window.localStorage.setItem(key, "1");
+          setOnline(true);
+        } else if (!cancelled) {
+          setOnline(Boolean(data.is_online));
+        }
+      } else {
         setOnline(Boolean(data.is_online));
-      });
-  }, [profile]);
+      }
+      if (!cancelled) setPresenceReady(true);
+    };
+
+    void restore();
+    return () => { cancelled = true; };
+  }, [profile?.id]);
 
   useEffect(() => {
-    if (!online && !hasActive) return;
+    if ((!online || !presenceReady) && !hasActive) return;
 
     const heartbeat = () => {
+      if (!navigator.onLine) return;
       void supabase.rpc("captain_presence_heartbeat", { p_online: true });
     };
     const onVisibility = () => {
@@ -113,14 +157,19 @@ export default function CaptainApp() {
 
     heartbeat();
     const timer = window.setInterval(heartbeat, 45_000);
+    window.addEventListener("focus", heartbeat);
+    window.addEventListener("online", heartbeat);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(timer);
+      window.removeEventListener("focus", heartbeat);
+      window.removeEventListener("online", heartbeat);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [online, hasActive]);
+  }, [online, presenceReady, hasActive]);
 
   const toggleOnline = async (val: boolean) => {
+    if (!profile?.id) return;
     const previous = online;
     setOnline(val);
     const { error } = await supabase.rpc("captain_presence_heartbeat", { p_online: val });
@@ -129,6 +178,8 @@ export default function CaptainApp() {
       setNote("تعذّر تحديث حالة الاتصال: " + error.message);
       return;
     }
+
+    window.localStorage.setItem(presenceKey(profile.id), val ? "1" : "0");
     if (val) void loadPending();
     else {
       setTrips([]);
@@ -137,13 +188,10 @@ export default function CaptainApp() {
   };
 
   useEffect(() => {
-    if (!online) return;
+    if (!online || !presenceReady) return;
 
     void loadPending();
 
-    // Realtime gives immediate updates when available. We intentionally do not
-    // use a column filter here because mobile Realtime connections can be stale
-    // after schema/publication changes; the RPC is the authoritative filter.
     const channel = supabase
       .channel("pending-trips")
       .on("postgres_changes", {
@@ -153,14 +201,6 @@ export default function CaptainApp() {
         if (status === "SUBSCRIBED") void loadPending();
       });
 
-    // Fallback polling guarantees delivery even if a websocket event is lost,
-    // the WebView was suspended, or the device briefly changed networks.
-    const pollTimer = window.setInterval(() => {
-      if (document.visibilityState === "visible" && navigator.onLine) {
-        void loadPending();
-      }
-    }, 8_000);
-
     const refreshAll = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine) return;
       void loadPending();
@@ -169,6 +209,7 @@ export default function CaptainApp() {
       void supabase.rpc("captain_presence_heartbeat", { p_online: true });
     };
 
+    const pollTimer = window.setInterval(refreshAll, 8_000);
     const onVisibility = () => {
       if (document.visibilityState === "visible") refreshAll();
     };
@@ -184,7 +225,7 @@ export default function CaptainApp() {
       document.removeEventListener("visibilitychange", onVisibility);
       void supabase.removeChannel(channel);
     };
-  }, [online, loadPending, checkActive, checkOffer]);
+  }, [online, presenceReady, loadPending, checkActive, checkOffer]);
 
   const submitOffer = async (tripId: string, price: number) => {
     setNote("");
@@ -200,7 +241,6 @@ export default function CaptainApp() {
     void loadPending();
   };
 
-  // شاشة انتظار الموافقة أو الرفض
   if (capStatus && capStatus !== "approved") {
     return (
       <div className="roleShell" dir="rtl">
@@ -262,7 +302,7 @@ export default function CaptainApp() {
               <div className="onlineRow">
                 <div>
                   <h2>مرحبًا كابتن {profile?.full_name || ""}</h2>
-                  <p>{online ? "أنت متصل — تستقبل الطلبات القريبة" : "أنت غير متصل"}</p>
+                  <p>{!presenceReady ? "جارٍ استعادة حالة الاتصال..." : online ? "أنت متصل — تستقبل الطلبات القريبة" : "أنت غير متصل"}</p>
                   {online && locStatus.error && (
                     <p className="locWarn">⚠ {locStatus.error}</p>
                   )}
@@ -270,7 +310,7 @@ export default function CaptainApp() {
                     <p className="locOk">📍 موقعك يُحدَّث بنجاح</p>
                   )}
                 </div>
-                <button className={`onlineToggle ${online ? "isOn" : ""}`} onClick={() => toggleOnline(!online)}>
+                <button disabled={!presenceReady} className={`onlineToggle ${online ? "isOn" : ""}`} onClick={() => toggleOnline(!online)}>
                   <i />{online ? "متصل" : "غير متصل"}
                 </button>
               </div>
@@ -307,7 +347,7 @@ export default function CaptainApp() {
                           </div>
                         </div>
                         <div className="custPrice">
-                          <b>{Number(t.price).toFixed(2)}</b>
+                          <b>{Number(t.price).toFixed(0)}</b>
                           <span>ج.م · نقداً</span>
                         </div>
                       </div>
@@ -343,7 +383,6 @@ export default function CaptainApp() {
               </section>
             )}
 
-            {/* مودال تعديل السعر اليدوي */}
             {priceModal.open && (
               <div className="modalWrap" onClick={(e) => { if (e.target === e.currentTarget) setPriceModal({ open: false, tripId: "", defaultPrice: 0, value: "" }); }}>
                 <div className="modalCard" style={{ maxWidth: 360 }}>
