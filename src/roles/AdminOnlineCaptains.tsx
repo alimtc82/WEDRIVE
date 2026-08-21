@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export interface OnlineCaptainRow {
@@ -42,34 +42,56 @@ export default function AdminOnlineCaptains({ onBack }: { onBack: () => void }) 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const requestIdRef = useRef(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const load = useCallback(async (showLoading = false) => {
+    const requestId = ++requestIdRef.current;
+
+    if (showLoading) setLoading(true);
+
     const { data, error: rpcError } = await supabase.rpc("admin_online_captains_page", {
       p_query: appliedQuery,
       p_page: page,
       p_page_size: PAGE_SIZE,
     });
+
+    // Ignore stale responses from older overlapping refreshes.
+    if (requestId !== requestIdRef.current) return;
+
     if (rpcError) {
-      setRows([]);
-      setTotal(0);
       setError("تعذّر تحميل الكباتن المتصلين: " + rpcError.message);
     } else {
       const result = data as unknown as OnlineCaptainsPage;
       setRows(result?.items || []);
       setTotal(Number(result?.total || 0));
+      setError("");
     }
-    setLoading(false);
+
+    if (showLoading) setLoading(false);
   }, [appliedQuery, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load(true);
+  }, [load]);
 
   useEffect(() => {
+    let refreshTimer: number | undefined;
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        void load(false);
+      }, 250);
+    };
+
     const channel = supabase.channel("admin-online-directory")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "captains" }, () => load())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "captains" }, scheduleRefresh)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      supabase.removeChannel(channel);
+    };
   }, [load]);
 
   const search = (event: FormEvent) => {
@@ -102,7 +124,7 @@ export default function AdminOnlineCaptains({ onBack }: { onBack: () => void }) 
       </form>
 
       {error && <p className="authError" role="alert">{error}</p>}
-      {loading && <p className="emptyState">جارٍ تحميل الكباتن المتصلين...</p>}
+      {loading && rows.length === 0 && <p className="emptyState">جارٍ تحميل الكباتن المتصلين...</p>}
       {!loading && !error && rows.length === 0 && (
         <p className="emptyState">{appliedQuery ? "لا توجد نتائج مطابقة" : "لا يوجد كباتن متصلون حاليًا"}</p>
       )}
