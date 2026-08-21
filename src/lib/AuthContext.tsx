@@ -8,7 +8,7 @@ interface AuthState {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (args: { email: string; password: string; fullName: string; phone: string; role: UserRole }) => Promise<void>;
+  signUp: (args: { email: string; password: string; fullName: string; phone: string; role: UserRole; termsVersion?: string }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -21,15 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error) {
-      setProfile(null);
-      return;
-    }
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (error) { setProfile(null); return; }
     setProfile(data as Profile);
   }, []);
 
@@ -43,16 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.session?.user) await loadProfile(data.session.user.id);
       setLoading(false);
     });
-
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
-      if (s?.user) {
-        await loadProfile(s.user.id);
-      } else {
-        setProfile(null);
-      }
+      if (s?.user) await loadProfile(s.user.id); else setProfile(null);
     });
-
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
 
@@ -61,25 +48,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(mapAuthError(error.message));
   };
 
-  const signUp: AuthState["signUp"] = async ({ email, password, fullName, phone, role }) => {
+  const signUp: AuthState["signUp"] = async ({ email, password, fullName, phone, role, termsVersion }) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, phone, role } },
+      options: { data: {
+        full_name: fullName, phone, role,
+        terms_accepted: Boolean(termsVersion),
+        terms_version: termsVersion || null,
+        terms_accepted_at: termsVersion ? new Date().toISOString() : null,
+      } },
     });
     if (error) throw new Error(mapAuthError(error.message));
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-  };
+  const signOut = async () => { await supabase.auth.signOut(); setProfile(null); };
 
-  return (
-    <AuthCtx.Provider value={{ session, profile, loading, signIn, signUp, signOut, refreshProfile }}>
-      {children}
-    </AuthCtx.Provider>
-  );
+  return <AuthCtx.Provider value={{ session, profile, loading, signIn, signUp, signOut, refreshProfile }}>{children}</AuthCtx.Provider>;
 }
 
 export function useAuth() {
