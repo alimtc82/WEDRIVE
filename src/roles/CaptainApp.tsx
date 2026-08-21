@@ -78,9 +78,32 @@ export default function CaptainApp() {
   }, [checkActive, profile]);
 
   useEffect(() => {
-    supabase.from("captains").select("status,reject_reason").eq("id", profile!.id).single()
-      .then(({ data }) => { if (data) setCapStatus(data.status); });
+    supabase.from("captains").select("status,reject_reason,is_online").eq("id", profile!.id).single()
+      .then(({ data }) => {
+        if (!data) return;
+        setCapStatus(data.status);
+        setOnline(Boolean(data.is_online));
+      });
   }, [profile]);
+
+  useEffect(() => {
+    if (!online && !hasActive) return;
+
+    const heartbeat = () => {
+      void supabase.rpc("captain_presence_heartbeat", { p_online: true });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") heartbeat();
+    };
+
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 45_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [online, hasActive]);
 
   const loadPending = useCallback(async () => {
     const { data, error } = await supabase.rpc("pending_trips_for_captain");
@@ -88,10 +111,14 @@ export default function CaptainApp() {
   }, []);
 
   const toggleOnline = async (val: boolean) => {
+    const previous = online;
     setOnline(val);
-    await supabase.from("captains")
-      .update({ is_online: val, location_updated_at: new Date().toISOString() })
-      .eq("id", profile!.id);
+    const { error } = await supabase.rpc("captain_presence_heartbeat", { p_online: val });
+    if (error) {
+      setOnline(previous);
+      setNote("تعذّر تحديث حالة الاتصال: " + error.message);
+      return;
+    }
     if (val) loadPending();
     else setTrips([]);
   };

@@ -1,7 +1,7 @@
 # Captain Banha — Project Notes
 
 > Read this file first when starting any new working session on this project.
-> Last updated: 2026-08-21 (v1.16.4)
+> Last updated: 2026-08-21 (v1.16.5)
 
 ## Identity & Infrastructure
 - **App name:** كابتن بنها (Captain Banha) — formerly "WE DRIVE"
@@ -37,6 +37,7 @@ npx cap sync
 - v1.10.3: password confirmation field + show/hide password toggle (customer signup & captain register step 1); "Remember me" on sign-in.
 - v1.16.2: "Remember me" stores email only; fixed-route coordinates are verified server-side; privileged RPC surface and document paths are hardened; CI runs type-checks/tests; location writes and Realtime subscriptions are throttled/scoped.
 - v1.16.4: restored smart in-app place suggestions, Arabic-tolerant match highlighting, city matching, and deterministic local-result ranking.
+- v1.16.5: reliable captain presence heartbeat, consistent online count, and a searchable paginated admin directory with direct call and WhatsApp actions.
 - v1.10.6: replaced `prompt()` price input in CaptainApp with inline modal (`priceModal` state, Enter-to-submit, click-outside to close); added `.env.example` template; added GitHub Actions CI workflow (`.github/workflows/ci.yml`, build check on push/PR to main, needs `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` repo secrets); offer countdown timer synced with DB `offer_ttl_sec`.
 
 ## Auth architecture notes
