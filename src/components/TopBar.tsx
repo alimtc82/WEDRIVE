@@ -13,7 +13,7 @@ function applyTheme(t: "light" | "dark") {
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem("wd-theme", t); } catch { /* تجاهل */ }
   const m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.setAttribute("content", t === "light" ? "#f2f5fa" : "#0f1729");
+  if (m) m.setAttribute("content", t === "light" ? "#f3f7fd" : "#0b1220");
 }
 
 export default function TopBar({ title }: { title: string }) {
