@@ -1,3 +1,2 @@
-// رقم إصدار التطبيق — يُحدّث هنا ويظهر في الواجهة
-export const APP_VERSION = "1.16.5";
-
+// مصدر إصدار الواجهة الموحد — يجب أن يطابق package.json
+export const APP_VERSION = "1.16.7";
