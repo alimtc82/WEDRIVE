@@ -103,7 +103,12 @@ export default function AdminPlacesV1178() {
     const name=placeName.trim(), coords=parseCoords(placeCoords); if(!name){fail("اسم المكان مطلوب");return;} if(!coords){fail("الإحداثيات مطلوبة بصيغة صحيحة، مثال: 30.4706813, 31.1844191");return;}
     setBusy(true); const payload={name,lat:coords.lat,lng:coords.lng,district_id:placeDist||null,parent_place_id:placeParent||null};
     const {error}=editPlace?await supabase.from("places").update(payload).eq("id",editPlace.id):await supabase.from("places").insert(payload); setBusy(false);
-    if(error){fail("تعذر حفظ المكان: "+error.message);return;} flash(editPlace?"تم تعديل المكان ✓":"تمت إضافة المكان ✓");resetPlace();setPlacesView("list");await load();
+    if(error){
+      if(error.code==="23505") fail("هذا المكان محفوظ بالفعل بنفس الاسم والإحداثيات.");
+      else fail("تعذر حفظ المكان: "+error.message);
+      return;
+    }
+    flash(editPlace?"تم تعديل المكان ✓":"تمت إضافة المكان ✓");resetPlace();setPlacesView("list");await load();
   };
   const deletePlace=async(p:Place)=>{if(!confirm(`حذف «${p.name}»؟`))return;const {error}=await supabase.from("places").delete().eq("id",p.id);if(error)fail(error.message);else{flash("تم حذف المكان ✓");await load()}};
 
@@ -147,8 +152,9 @@ export default function AdminPlacesV1178() {
       <div className="apFormHead"><button className="wizBack" onClick={()=>{resetPlace();setPlacesView("list")}}>→ رجوع لقائمة الأماكن</button><h3>{editPlace?"تعديل مكان":"إضافة مكان جديد"}</h3></div>
       <SmartPicker label="المدينة" optional value={placeCity} items={cities} placeholder="ابحث عن المدينة..." addLabel="إضافة مدينة جديدة" onPick={id=>{setPlaceCity(id);if(id!==placeCity)setPlaceDist("")}} onAdd={addCityFromPlace}/>
       <SmartPicker label="الحي" optional value={placeDist} items={placeDistricts} placeholder="ابحث عن الحي..." addLabel="إضافة حي جديد" onPick={id=>{setPlaceDist(id);const d=districts.find(x=>x.id===id);if(d)setPlaceCity(d.city_id)}} onAdd={addDistrictFromPlace}/>
+      <div className="field bridgeDistrictField" style={{display:"none"}}><label>الحي</label><select data-place-district-id value={placeDist} onChange={e=>setPlaceDist(e.target.value)}><option value="">بدون حي</option>{districts.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
       <div className="field requiredField"><label>اسم المكان <b>*</b></label><input value={placeName} placeholder="مثال: مسجد النور، مستشفى الجامعة، شارع فريد ندا" onChange={e=>setPlaceName(e.target.value)}/></div>
-      <SmartPicker label="تابع لمكان" optional value={placeParent} items={parentChoices} placeholder="ابحث في الأماكن المحفوظة..." addLabel="لا يمكن إضافة مكان تابع قبل حفظه" onPick={setPlaceParent} onAdd={async()=>fail("احفظ المكان الجديد أولًا، ثم يمكنك ربط مكان آخر به")}/>
+      <div className="field"><label>تابع لمكان — اختياري</label><select value={placeParent} onChange={e=>setPlaceParent(e.target.value)}><option value="">بدون — مكان رئيسي</option>{parentChoices.map(p=><option key={p.id} value={p.id}>{p.name}{p.districts?.name?` — ${p.districts.name}`:""}</option>)}</select></div>
       <div className="field requiredField"><label>الإحداثيات <b>*</b></label><input value={placeCoords} placeholder="30.4706813, 31.1844191" style={{direction:"ltr",textAlign:"left"}} onChange={e=>setPlaceCoords(e.target.value)}/><small>الحقلان الإجباريان فقط: اسم المكان + الإحداثيات.</small></div>
       <button className="authSubmit" disabled={busy} onClick={savePlace}>{editPlace?"حفظ التعديل":"حفظ المكان"}</button>
     </div>}
