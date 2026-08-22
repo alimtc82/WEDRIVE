@@ -99,7 +99,6 @@ export default function AdminParentPlaceBridge({ active }: { active: boolean }) 
       const districtField = fields.find((field) => (field.querySelector("label")?.textContent || "").trim() === "الحي");
       return (districtField?.querySelector("select") as HTMLSelectElement | null)?.value || "";
     })();
-    if (!currentDistrict) { setError("اختر الحي أولًا قبل اختيار مكان رئيسي من الخريطة"); return; }
 
     const targetName = normalizeArabic(place.name);
     const { data: possible } = await supabase.from("places")
@@ -116,7 +115,7 @@ export default function AdminParentPlaceBridge({ active }: { active: boolean }) 
     }
 
     const { data: created, error: insertError } = await supabase.from("places")
-      .insert({ name: place.name.trim(), lat: place.lat, lng: place.lng, district_id: currentDistrict, parent_place_id: null })
+      .insert({ name: place.name.trim(), lat: place.lat, lng: place.lng, district_id: currentDistrict || null, parent_place_id: null })
       .select("id,name")
       .single();
     if (insertError || !created) { setError("تعذّر حفظ المكان الرئيسي: " + (insertError?.message || "خطأ غير معروف")); return; }
@@ -136,7 +135,7 @@ export default function AdminParentPlaceBridge({ active }: { active: boolean }) 
         onSelectExternal={(p) => { void chooseExternal(p); }}
         onClear={() => setNativeParent("")}
       />
-      {districtId && !selectedId && !external && <small className="apMeta">اختر مكانًا محفوظًا أو ابحث عنه في الخريطة الأساسية للنظام.</small>}
+      {!selectedId && !external && <small className="apMeta">اختر مكانًا محفوظًا أو ابحث عنه في الخريطة الأساسية للنظام{districtId ? "" : " — ويمكن الحفظ بدون حي"}.</small>}
       {error && <p className="authError">{error}</p>}
     </div>,
     mount,
