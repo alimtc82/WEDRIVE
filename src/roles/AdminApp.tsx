@@ -6,7 +6,7 @@ import AdminCaptains from "./AdminCaptains";
 import AdminOverview from "./AdminOverview";
 import AdminMap from "./AdminMap";
 import AdminRatings from "./AdminRatings";
-import AdminPlaces from "./AdminPlaces";
+import AdminPlaces from "./AdminPlacesV1178";
 import AdminOnlineCaptains from "./AdminOnlineCaptains";
 import AdminSimulation from "./AdminSimulation";
 import AdminParentPlaceBridge from "./AdminParentPlaceBridge";
