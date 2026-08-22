@@ -34,6 +34,14 @@ function pinEl(kind: "captain" | "from" | "to" | "stop"): HTMLDivElement {
 }
 function lineFeature(coords: Coord[]) { return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: coords } }; }
 
+function uprightCarTransform(heading: number) {
+  let angle = ((heading - 90 + 540) % 360) - 180;
+  let flip = 1;
+  if (angle > 90) { angle -= 180; flip = -1; }
+  else if (angle < -90) { angle += 180; flip = -1; }
+  return `rotate(${angle}deg) scaleX(${flip})`;
+}
+
 export default function TripMap({ tripId, status, onEtaChange }: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +69,7 @@ export default function TripMap({ tripId, status, onEtaChange }: Props) {
     if (userMovedMap.current && !force) return;
     const bounds = new maplibregl.LngLatBounds();
     bounds.extend(cap);
-    const sample = route.slice(0, Math.min(route.length, 80));
+    const sample = route.slice(0, Math.min(route.length, 100));
     sample.forEach(p => bounds.extend(p));
     map.fitBounds(bounds, { padding: { top: 72, right: 48, bottom: 92, left: 48 }, maxZoom: 16.8, duration: 550 });
   }, []);
@@ -72,14 +80,27 @@ export default function TripMap({ tripId, status, onEtaChange }: Props) {
     const cap: Coord | null = d.captain ? [d.captain.lng, d.captain.lat] : null;
     if (!cap) { onEtaChange?.(null); return; }
 
-    let waypoints: Coord[];
-    if (beforeStart) waypoints = [cap, pickup];
-    else if (inProgress) {
-      const stopCoords: Coord[] = stopsRef.current.map(s => [s.lng, s.lat]);
-      waypoints = [cap, ...stopCoords, dropoff];
-    } else waypoints = [pickup, dropoff];
-
     try {
+      if (inProgress) {
+        const stopCoords: Coord[] = stopsRef.current.map(s => [s.lng, s.lat]);
+        const [doneResult, nextResult] = await Promise.allSettled([
+          fetchRouteDetails([pickup, cap]),
+          fetchRouteDetails([cap, ...stopCoords, dropoff]),
+        ]);
+
+        const doneCoords = doneResult.status === "fulfilled" ? doneResult.value.coordinates : [];
+        if (nextResult.status !== "fulfilled") throw new Error("remaining route unavailable");
+        const nextRoute = nextResult.value;
+
+        setLine("routeDone", doneCoords, DONE_COLOR, 6);
+        setLine("routeNext", nextRoute.coordinates, NEXT_TRIP, 5);
+        setRouteError(false);
+        onEtaChange?.(null);
+        followCarAndRoute([...doneCoords.slice(-35), ...nextRoute.coordinates], cap, forceFocus);
+        return;
+      }
+
+      const waypoints: Coord[] = beforeStart ? [cap, pickup] : [pickup, dropoff];
       const route = await fetchRouteDetails(waypoints);
       setRouteError(false);
       setLine("routeDone", [], DONE_COLOR, 6);
@@ -92,7 +113,7 @@ export default function TripMap({ tripId, status, onEtaChange }: Props) {
     } catch {
       setRouteError(true);
       onEtaChange?.(null);
-      setLine("routeDone", [], DONE_COLOR, 6);
+      if (!inProgress) setLine("routeDone", [], DONE_COLOR, 6);
       setLine("routeNext", [], beforeStart ? NEXT_PICKUP : NEXT_TRIP, 5);
     }
   }, [beforeStart, inProgress, followCarAndRoute, onEtaChange, setLine]);
@@ -112,8 +133,9 @@ export default function TripMap({ tripId, status, onEtaChange }: Props) {
       if (!markers.current.captain) markers.current.captain = new maplibregl.Marker({ element: pinEl("captain") }).setLngLat(pos).addTo(map); else markers.current.captain.setLngLat(pos);
       const img = markers.current.captain.getElement().querySelector("img") as HTMLImageElement | null;
       if (img) {
+        img.style.transformOrigin = "50% 50%";
         const heading = d.captain.heading;
-        if (heading != null && Number.isFinite(heading)) img.style.transform = `rotate(${heading - 90}deg)`;
+        img.style.transform = heading != null && Number.isFinite(heading) ? uprightCarTransform(heading) : "rotate(0deg) scaleX(1)";
       }
     }
     void drawRoute(d, forceFocus);
