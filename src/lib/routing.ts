@@ -7,6 +7,7 @@ export interface RouteDetails {
   durationSec: number | null;
 }
 
+const ROUTE_PROXY_ORIGIN = "https://wedrive.mtc-group.online";
 const ROUTERS = [
   "https://router.project-osrm.org/route/v1/driving/",
   "https://routing.openstreetmap.de/routed-car/route/v1/driving/",
@@ -23,12 +24,17 @@ function parseRoute(data: any): RouteDetails | null {
   };
 }
 
-async function requestNativeRoute(url: string): Promise<RouteDetails | null> {
+function encodedPoints(points: Coord[]): string {
+  return encodeURIComponent(points.map((p) => `${p[0]},${p[1]}`).join(";"));
+}
+
+async function requestNativeRoute(url: string, timeoutMs = 10_000): Promise<RouteDetails | null> {
   try {
     const res = await CapacitorHttp.get({
       url,
-      connectTimeout: 7000,
-      readTimeout: 7000,
+      connectTimeout: timeoutMs,
+      readTimeout: timeoutMs,
+      headers: { Accept: "application/json" },
     });
     if (res.status < 200 || res.status >= 300) return null;
     const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
@@ -38,13 +44,16 @@ async function requestNativeRoute(url: string): Promise<RouteDetails | null> {
   }
 }
 
+async function requestNativeProxy(points: Coord[]): Promise<RouteDetails | null> {
+  return requestNativeRoute(`${ROUTE_PROXY_ORIGIN}/api/route?points=${encodedPoints(points)}`, 12_000);
+}
+
 async function requestWebRoute(points: Coord[]): Promise<RouteDetails | null> {
   try {
-    const qs = encodeURIComponent(points.map((p) => `${p[0]},${p[1]}`).join(";"));
     const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 10_000);
+    const timer = window.setTimeout(() => ctrl.abort(), 12_000);
     try {
-      const res = await fetch(`/api/route?points=${qs}`, {
+      const res = await fetch(`/api/route?points=${encodedPoints(points)}`, {
         signal: ctrl.signal,
         cache: "no-store",
         headers: { Accept: "application/json" },
@@ -69,6 +78,14 @@ export async function fetchRouteDetails(points: Coord[]): Promise<RouteDetails> 
     throw new Error("ROUTE_UNAVAILABLE");
   }
 
+  // Android/iOS: use our own HTTPS proxy first. This avoids device-specific
+  // failures, rate limits and TLS/CORS differences when talking to public
+  // routing providers directly from the native WebView.
+  const proxied = await requestNativeProxy(points);
+  if (proxied) return proxied;
+
+  // Final safety net: if the application proxy is temporarily unreachable,
+  // try the public providers directly before declaring the route unavailable.
   const path = points.map((p) => `${p[0]},${p[1]}`).join(";");
   const suffix = `${path}?overview=full&geometries=geojson&steps=false`;
   for (const base of ROUTERS) {
