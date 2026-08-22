@@ -148,6 +148,9 @@ export default function CustomerApp() {
     if (d && d.last - d.y > 90) setDetailsMinimized(true);
   };
 
+  const removeStop = (index: number) => setStops(arr => arr.filter((_, i) => i !== index));
+  const clearStops = () => setStops([]);
+
   const bookingDetails = pickup && dropoff ? (
     detailsMinimized ? (
       <button className="cmpRestoreDetails" type="button" onClick={() => setDetailsMinimized(false)}>▲ تفاصيل الرحلة</button>
@@ -158,7 +161,7 @@ export default function CustomerApp() {
         {showFixedRoutes && fixedRoutes.length > 0 && (
           <details className="fixedRoutes"><summary className="frTitle">مشاوير بأسعار ثابتة</summary><div className="frList">{fixedRoutes.map(r => <div key={r.id} className={`frRow ${pickedRouteId?.startsWith(r.id) ? "on" : ""}`}><div className="frMain"><b>{r.name || `${r.from_name} ← ${r.to_name}`}</b><small>{r.from_name} ← {r.to_name}</small></div><div className="frSide"><span className="frPrice">{Number(r.price).toFixed(0)} ج</span><button type="button" className="frPick" onClick={() => pickFixedRoute(r, false)}>ذهاب</button>{r.reverse_price != null && <button type="button" className="frPick rev" onClick={() => pickFixedRoute(r, true)}>عودة {Number(r.reverse_price).toFixed(0)} ج</button>}</div></div>)}</div></details>
         )}
-        {stops.length > 0 && <div className="cmpStopsList">{stops.map((s, i) => <div key={i}><span className="cmpStopDot"/><span>{s.addr || `نقطة توقف ${i + 1}`}</span><button type="button" onClick={() => setStops(arr => arr.filter((_, j) => j !== i))}>حذف</button></div>)}</div>}
+        {stops.length > 0 && <div className="cmpStopsBlock"><div className="cmpStopsHead"><b>نقاط التوقف</b><button type="button" onClick={clearStops}>× حذف الكل</button></div><div className="cmpStopsList">{stops.map((s, i) => <div key={`${i}-${s.addr}`}><span className="cmpStopDot"/><span>{s.addr || `نقطة توقف ${i + 1}`}</span><button type="button" onClick={() => removeStop(i)} aria-label={`حذف نقطة التوقف ${i + 1}`}>×</button></div>)}</div></div>}
         {stops.length < MAX_STOPS && <button type="button" className="addStopBtn" onClick={() => { setStopPickSeq(v => v + 1); setPickedRouteId(null); setDetailsMinimized(true); }}>＋ إضافة نقطة توقف ({stops.length}/{MAX_STOPS})</button>}
         <div className="cmpAutoKind"><span>نوع الرحلة</span><b>{kind === "in_city" ? "داخل المدينة" : "بين المدن"}</b><small>يحدده النظام تلقائيًا من مسافة الطريق</small></div>
         <div className="fareBox"><div><span>مسافة الطريق{stops.length ? " (شاملة التوقفات)" : ""}</span><b className="distVal">{routeLoading ? "جارٍ الحساب..." : distance != null ? `${distance} كم` : "—"}</b></div><div style={{ textAlign: "left" }}><span>السعر المقترح</span><b>{routeLoading ? "..." : (fixedPrice ?? fare) != null ? `${(fixedPrice ?? fare)!.toFixed(0)} ج.م` : "—"}</b></div></div>
@@ -187,7 +190,9 @@ export default function CustomerApp() {
         pickup={pickup} pickupAddress={pickupAddr} dropoff={dropoff} dropoffAddress={dropoffAddr}
         stops={stops}
         stopRequestKey={stopPickSeq}
-        onStopConfirm={(loc, addr) => { setStops(arr => arr.length < MAX_STOPS ? [...arr, { loc, addr }] : arr); setDetailsMinimized(false); }}
+        onStopConfirm={(loc, addr, continueAdding) => { setStops(arr => arr.length < MAX_STOPS ? [...arr, { loc, addr }] : arr); setDetailsMinimized(continueAdding); }}
+        onStopRemove={removeStop}
+        onStopsClear={clearStops}
         onPickupChange={(loc, addr) => { setPickup(loc); setPickupAddr(addr); setPickedRouteId(null); }}
         onDropoffChange={(loc, addr) => { setDropoff(loc); setDropoffAddr(addr); setPickedRouteId(null); }}
         onPickupPlaceSelect={setPickupPlaceId} onDropoffPlaceSelect={setDropoffPlaceId}>{bookingDetails}</CustomerMapPlanner>)}
