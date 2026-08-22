@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { CAPTAIN_BANHA_ASSISTANT } from "../assets/v1172/assistantAsset";
 import "./customerHelpGuide.css";
 import "./customerHelpGuideV1171.css";
+import "./customerHelpGuideV1172.css";
 
-const HELP_SESSION_KEY = "wd-customer-help-v4";
+const HELP_SESSION_KEY = "wd-customer-help-v5";
 type DragState = { startX: number; startY: number; posX: number; posY: number; left: number; right: number; top: number; bottom: number };
 
 export default function CustomerHelpGuide({ replayKey = 0 }: { replayKey?: number }) {
@@ -83,10 +85,12 @@ export default function CustomerHelpGuide({ replayKey = 0 }: { replayKey?: numbe
       title="اسحب من أي مكان لتحريك مساعد كابتن بنها"
     >
       <button className="cbHelpClose" type="button" onClick={close} aria-label="إغلاق المساعدة">×</button>
-      <div className="cbDriverAvatar" role="img" aria-label="مساعد كابتن بنها" />
+      <div className="cbDriverAvatar cbDriverAvatarV1172" aria-label="مساعد كابتن بنها">
+        <img src={CAPTAIN_BANHA_ASSISTANT} alt="" draggable={false}/>
+      </div>
       <div className="cbHelpCopy">
         <b>أهلاً بيك في كابتن بنها 👋</b>
-        <span>تقدر تغيّر نقطة الانطلاق أو الوصول من <strong>البحث الذكي</strong>، وتسحب دبوس الانطلاق مباشرة لتغيير مكانك، أو تختار أي نقطة من الخريطة.</span>
+        <span>تقدر تغيّر نقطة الانطلاق أو الوصول من <strong>البحث الذكي</strong>، وتسحب دبوس «من» أو «إلى» مباشرة لتغيير المكان، أو تختار أي نقطة من الخريطة.</span>
         <small>↕ اسحب المساعد من أي مكان لتحريكه</small>
       </div>
     </aside>
